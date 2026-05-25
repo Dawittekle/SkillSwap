@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:skill_swap/src/core/theme/app_theme.dart';
 import 'package:skill_swap/src/features/placeholders/simple_placeholder_screen.dart';
 import 'package:skill_swap/src/features/shell/bottom_navigation_shell.dart';
+import 'package:skill_swap/src/features/skills/skill_details_page.dart';
 
 class SkillSwapApp extends StatelessWidget {
   const SkillSwapApp({super.key});
@@ -13,6 +14,7 @@ class SkillSwapApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       initialRoute: AppRoutes.home,
+      onGenerateRoute: _generateRoute,
       routes: {
         AppRoutes.home: (_) => const BottomNavigationShell(),
         AppRoutes.profileSetup: (_) => const SimplePlaceholderScreen(
@@ -38,6 +40,21 @@ class SkillSwapApp extends StatelessWidget {
       },
     );
   }
+
+  Route<dynamic>? _generateRoute(RouteSettings settings) {
+    if (settings.name == AppRoutes.skillDetails) {
+      final skillId = settings.arguments is String
+          ? settings.arguments! as String
+          : '';
+
+      return MaterialPageRoute(
+        builder: (_) => SkillDetailsPage(skillId: skillId),
+        settings: settings,
+      );
+    }
+
+    return null;
+  }
 }
 
 class AppRoutes {
@@ -47,6 +64,7 @@ class AppRoutes {
   static const profileSetup = '/profile/setup';
   static const addSkill = '/skills/add';
   static const requestSwap = '/swaps/request';
+  static const skillDetails = '/skills/details';
   static const chat = '/chat';
   static const reviewSession = '/sessions/review';
 }
