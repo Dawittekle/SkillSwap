@@ -46,6 +46,30 @@ class SkillChip extends StatelessWidget {
   }
 }
 
+class CategoryChip extends StatelessWidget {
+  const CategoryChip({
+    required this.label,
+    this.selected = false,
+    this.icon,
+    this.onTap,
+    super.key,
+  });
+
+  final String label;
+  final bool selected;
+  final IconData? icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: SkillChip(label: label, selected: selected, icon: icon),
+    );
+  }
+}
+
 class StatusChip extends StatelessWidget {
   const StatusChip({
     required this.label,
