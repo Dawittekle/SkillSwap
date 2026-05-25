@@ -1,1 +1,25 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Android/iOS generated build output
+android/.gradle/
+android/app/build/
+ios/Flutter/ephemeral/
+ios/Pods/
+
+# IDE and local machine files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Existing local pattern kept from the original repo.
 /references
