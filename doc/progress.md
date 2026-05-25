@@ -50,3 +50,47 @@
 - `flutter build apk --debug` passed and produced `build/app/outputs/flutter-apk/app-debug.apk`.
 - `flutter doctor -v` shows Android toolchain, Chrome, connected devices, and network resources are ready.
 - Remaining doctor issue: optional Linux desktop development packages are missing (`clang++`, `cmake`, `libgtk-3-dev`). These require sudo/apt and are not needed for Android or Chrome web runs.
+
+## 2026-05-25 Home Page
+
+### Completed
+- Rebuilt the Home tab using the Stitch reference direction:
+  - SkillSwap header with profile/avatar and notifications.
+  - Personalized greeting and search field.
+  - Teal potential-swaps summary panel.
+  - Horizontal skill category chips.
+  - Best-match student cards using mock student data.
+  - Upcoming session card.
+  - Recent activity list.
+- Added structured mock Home data in `lib/src/data/mock/mock_home.dart`.
+- Kept the page mock-data only and separated data from widgets so Firestore documents can replace the mock objects later.
+- Added responsive behavior with a centered max-width layout and wider grid layout on larger screens.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+
+## 2026-05-25 Discover And Skill Details
+
+### Completed
+- Rebuilt the Discover tab to match the Home page visual system:
+  - Page header with supporting copy.
+  - Reusable search field.
+  - Horizontal category chips.
+  - Skills Offered / Skills Wanted segmented control.
+  - Result summary panel.
+  - Responsive skill cards.
+  - Empty state for unmatched searches.
+- Added a reusable `SkillCard` component for skill listings.
+- Added a reusable `CategoryChip` wrapper around the existing chip styling.
+- Added structured mock skill metadata for detail pages:
+  - duration
+  - meeting format
+  - outcomes
+  - tags
+- Added a Skill Details page with owner info, outcomes, session format, and request/message actions.
+- Wired named routing for `AppRoutes.skillDetails` using a mock skill ID argument.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
