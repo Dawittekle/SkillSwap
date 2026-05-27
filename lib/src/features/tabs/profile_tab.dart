@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:skill_swap/data/services/auth_service.dart';
 import 'package:skill_swap/src/app.dart';
 import 'package:skill_swap/src/core/theme/app_colors.dart';
 import 'package:skill_swap/src/core/widgets/app_button.dart';
@@ -87,8 +88,23 @@ class ProfileTab extends StatelessWidget {
           AppButton(
             label: 'Edit Profile Setup',
             icon: Icons.edit_outlined,
-            onPressed: () =>
-                Navigator.of(context).pushNamed(AppRoutes.profileSetup),
+            onPressed: () => Navigator.of(context).pushNamed(
+              AppRoutes.profileSetup,
+              arguments: AuthService().currentUser?.uid ?? '',
+            ),
+          ),
+          const SizedBox(height: 12),
+          AppButton(
+            label: 'Logout',
+            icon: Icons.logout,
+            variant: AppButtonVariant.secondary,
+            onPressed: () async {
+              await AuthService().signOut();
+              if (!context.mounted) return;
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil(AppRoutes.home, (_) => false);
+            },
           ),
         ],
       ),
