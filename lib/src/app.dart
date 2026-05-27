@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:skill_swap/src/core/theme/app_theme.dart';
+import 'package:skill_swap/src/features/auth/auth_gate.dart';
+import 'package:skill_swap/src/features/auth/forgot_password_page.dart';
+import 'package:skill_swap/src/features/auth/profile_setup_page.dart';
+import 'package:skill_swap/src/features/auth/sign_up_page.dart';
 import 'package:skill_swap/src/features/placeholders/simple_placeholder_screen.dart';
-import 'package:skill_swap/src/features/shell/bottom_navigation_shell.dart';
 import 'package:skill_swap/src/features/skills/skill_details_page.dart';
 
 class SkillSwapApp extends StatelessWidget {
@@ -16,11 +19,9 @@ class SkillSwapApp extends StatelessWidget {
       initialRoute: AppRoutes.home,
       onGenerateRoute: _generateRoute,
       routes: {
-        AppRoutes.home: (_) => const BottomNavigationShell(),
-        AppRoutes.profileSetup: (_) => const SimplePlaceholderScreen(
-          title: 'Create Profile',
-          subtitle: 'Profile setup will be built in the next page task.',
-        ),
+        AppRoutes.home: (_) => const AuthGate(),
+        AppRoutes.signUp: (_) => const SignUpPage(),
+        AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
         AppRoutes.addSkill: (_) => const SimplePlaceholderScreen(
           title: 'Add Skill',
           subtitle: 'Teaching and learning skill forms will come next.',
@@ -42,6 +43,17 @@ class SkillSwapApp extends StatelessWidget {
   }
 
   Route<dynamic>? _generateRoute(RouteSettings settings) {
+    if (settings.name == AppRoutes.profileSetup) {
+      final uid = settings.arguments is String
+          ? settings.arguments! as String
+          : '';
+
+      return MaterialPageRoute(
+        builder: (_) => ProfileSetupPage(uid: uid),
+        settings: settings,
+      );
+    }
+
     if (settings.name == AppRoutes.skillDetails) {
       final skillId = settings.arguments is String
           ? settings.arguments! as String
@@ -61,6 +73,8 @@ class AppRoutes {
   const AppRoutes._();
 
   static const home = '/';
+  static const signUp = '/auth/sign-up';
+  static const forgotPassword = '/auth/forgot-password';
   static const profileSetup = '/profile/setup';
   static const addSkill = '/skills/add';
   static const requestSwap = '/swaps/request';
