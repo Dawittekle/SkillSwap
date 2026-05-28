@@ -91,6 +91,26 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-28 Skills Firestore Connection
+
+### Completed
+- Connected skill creation and updates to the `skills` Firestore collection.
+- Added Skills Setup with separate offered and wanted skill forms.
+- Prevented duplicate setup skills with the same title and type for the current user.
+- Added Add/Edit Skill page backed by Firestore.
+- Added Manage Skills page with separate sections:
+  - Skills I Teach
+  - Skills I Want to Learn
+- Added deactivate, reactivate, edit, and delete actions for user skills.
+- Connected My Profile skill sections to current user's Firestore skills.
+- Kept mock skill chips as fallback when Firestore has no skill data.
+- Kept non-skill mock pages unchanged.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
