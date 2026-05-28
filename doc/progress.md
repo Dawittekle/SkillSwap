@@ -127,6 +127,27 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-28 Swap Request Firestore Connection
+
+### Completed
+- Connected Request Swap to the `swapRequests` Firestore collection.
+- Added a Request Sent confirmation screen after successful request creation.
+- Loaded the current user's offered skills for selecting an exchange skill.
+- Saved swap requests with requester, teacher, offered skill, wanted skill, message, status, suggested time, mode, and timestamps.
+- Connected My Swaps to incoming and outgoing Firestore requests.
+- Added tabs for pending requests, accepted upcoming swaps, and completed swaps.
+- Added status badges and request actions:
+  - accept incoming pending requests
+  - decline incoming pending requests
+  - cancel outgoing pending requests
+  - complete accepted swaps
+- Added loading, empty, and error states.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
