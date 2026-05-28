@@ -70,6 +70,27 @@
 - `flutter analyze` passed.
 - `flutter test` passed.
 
+## 2026-05-28 Profile Firestore Connection
+
+### Completed
+- Connected Profile Setup to Firebase Auth and Firestore user documents.
+- Required setup fields before completing a profile:
+  - full name
+  - university
+  - department
+  - year
+  - campus
+  - bio
+- Set `profileCompleted: true` only after required fields are saved.
+- Connected My Profile to watch `users/{uid}` in real time.
+- Added Edit Profile page for updating saved Firestore profile fields.
+- Kept existing profile styling and kept skill sections on mock data.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
