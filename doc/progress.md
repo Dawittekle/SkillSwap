@@ -182,6 +182,21 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-28 Demo Data Seed Helper
+
+### Completed
+- Added a development-only Firestore seed helper for demo data.
+- Added six Ethiopian student profile documents with deterministic demo ids.
+- Added seven active offered skills with deterministic demo ids.
+- Added a debug-only Profile button for manually running the seed.
+- Seed logic skips records that already exist and does not modify the signed-in user's profile.
+- Added comments marking the helper and button as removable before final submission.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
