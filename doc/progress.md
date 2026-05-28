@@ -148,6 +148,24 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-28 Basic Chat Firestore Connection
+
+### Completed
+- Connected conversations to the `conversations` Firestore collection.
+- Connected chat messages to `conversations/{conversationId}/messages`.
+- Added a Firestore-backed Messages tab showing conversations for the current user.
+- Sorted conversations by `lastMessageAt` descending in the UI.
+- Added a Chat page that streams messages by `createdAt` ascending.
+- Added text message sending with `conversationId`, `senderId`, `text`, `createdAt`, and `readBy`.
+- Updated conversation `lastMessage` and `lastMessageAt` after sending.
+- Wired Message buttons from Public Student Profile, Skill Details, and swap cards to open or create conversations.
+- Kept chat simple with text only.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
