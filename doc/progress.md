@@ -166,6 +166,22 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-28 Reviews Firestore Connection
+
+### Completed
+- Connected session reviews to the `reviews` Firestore collection.
+- Added a Rate Session page for completed swaps.
+- Saved review data with session id, reviewer id, reviewee id, rating, tags, comment, and created timestamp.
+- Prevented duplicate reviews from the same reviewer for the same completed swap by using a stable review document id.
+- Added review cards and average rating display to Public Student Profile.
+- Added received review cards and average rating display to My Profile.
+- Updated `users/{uid}.rating` after review creation when possible.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
