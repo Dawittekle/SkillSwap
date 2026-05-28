@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:skill_swap/data/models/app_user.dart';
 import 'package:skill_swap/data/models/skill.dart' as firestore_skill;
@@ -5,6 +6,7 @@ import 'package:skill_swap/data/repositories/review_repository.dart';
 import 'package:skill_swap/data/repositories/skill_repository.dart';
 import 'package:skill_swap/data/repositories/user_repository.dart';
 import 'package:skill_swap/data/services/auth_service.dart';
+import 'package:skill_swap/data/services/demo_seed_service.dart';
 import 'package:skill_swap/src/app.dart';
 import 'package:skill_swap/src/core/theme/app_colors.dart';
 import 'package:skill_swap/src/core/widgets/app_button.dart';
@@ -21,12 +23,14 @@ class ProfileTab extends StatefulWidget {
     this.userRepository,
     this.skillRepository,
     this.reviewRepository,
+    this.demoSeedService,
   });
 
   final AuthService? authService;
   final UserRepository? userRepository;
   final SkillRepository? skillRepository;
   final ReviewRepository? reviewRepository;
+  final DemoSeedService? demoSeedService;
 
   @override
   State<ProfileTab> createState() => _ProfileTabState();
@@ -42,6 +46,8 @@ class _ProfileTabState extends State<ProfileTab> {
       widget.skillRepository ?? SkillRepository();
   ReviewRepository get _reviewRepository =>
       widget.reviewRepository ?? ReviewRepository();
+  DemoSeedService get _demoSeedService =>
+      widget.demoSeedService ?? DemoSeedService();
 
   Future<void> _logout() async {
     setState(() => _isSigningOut = true);
@@ -106,6 +112,7 @@ class _ProfileTabState extends State<ProfileTab> {
           user: user,
           skillRepository: _skillRepository,
           reviewRepository: _reviewRepository,
+          demoSeedService: _demoSeedService,
           isSigningOut: _isSigningOut,
           onEdit: () => Navigator.of(
             context,
@@ -122,6 +129,7 @@ class _ProfileContent extends StatelessWidget {
     required this.user,
     required this.skillRepository,
     required this.reviewRepository,
+    required this.demoSeedService,
     required this.isSigningOut,
     required this.onEdit,
     required this.onLogout,
@@ -130,6 +138,7 @@ class _ProfileContent extends StatelessWidget {
   final AppUser user;
   final SkillRepository skillRepository;
   final ReviewRepository reviewRepository;
+  final DemoSeedService demoSeedService;
   final bool isSigningOut;
   final VoidCallback onEdit;
   final VoidCallback? onLogout;
@@ -227,6 +236,11 @@ class _ProfileContent extends StatelessWidget {
             onPressed: () =>
                 Navigator.of(context).pushNamed(AppRoutes.manageSkills),
           ),
+          if (kDebugMode) ...[
+            const SizedBox(height: 12),
+            // DEVELOPMENT-ONLY demo helper. Remove before final submission.
+            _SeedDemoDataButton(demoSeedService: demoSeedService),
+          ],
           const SizedBox(height: 12),
           AppButton(
             label: isSigningOut ? 'Signing out...' : 'Logout',
@@ -236,6 +250,43 @@ class _ProfileContent extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _SeedDemoDataButton extends StatefulWidget {
+  const _SeedDemoDataButton({required this.demoSeedService});
+
+  final DemoSeedService demoSeedService;
+
+  @override
+  State<_SeedDemoDataButton> createState() => _SeedDemoDataButtonState();
+}
+
+class _SeedDemoDataButtonState extends State<_SeedDemoDataButton> {
+  bool _isSeeding = false;
+
+  Future<void> _seedDemoData() async {
+    setState(() => _isSeeding = true);
+    try {
+      final result = await widget.demoSeedService.seedDemoData();
+      if (!mounted) return;
+      showAuthMessage(context, result.message);
+    } catch (error) {
+      if (!mounted) return;
+      showAuthMessage(context, error.toString(), isError: true);
+    } finally {
+      if (mounted) setState(() => _isSeeding = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppButton(
+      label: _isSeeding ? 'Seeding Demo Data...' : 'Seed Demo Data',
+      icon: Icons.science_outlined,
+      variant: AppButtonVariant.secondary,
+      onPressed: _isSeeding ? null : _seedDemoData,
     );
   }
 }
