@@ -25,6 +25,15 @@ class SkillRepository {
     }
   }
 
+  Future<List<Skill>> getCurrentUserSkills(String uid) async {
+    try {
+      final snapshot = await _skills.where('ownerId', isEqualTo: uid).get();
+      return _skillsFromSnapshot(snapshot);
+    } catch (error) {
+      throw friendlyFirestoreException(error, 'Could not load your skills.');
+    }
+  }
+
   Stream<List<Skill>> watchCurrentUserSkills(String uid) {
     return _skills
         .where('ownerId', isEqualTo: uid)

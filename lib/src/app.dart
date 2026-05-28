@@ -6,7 +6,10 @@ import 'package:skill_swap/src/features/auth/profile_setup_page.dart';
 import 'package:skill_swap/src/features/auth/sign_up_page.dart';
 import 'package:skill_swap/src/features/placeholders/simple_placeholder_screen.dart';
 import 'package:skill_swap/src/features/profile/edit_profile_page.dart';
+import 'package:skill_swap/src/features/skills/manage_skills_page.dart';
 import 'package:skill_swap/src/features/skills/skill_details_page.dart';
+import 'package:skill_swap/src/features/skills/skill_form_page.dart';
+import 'package:skill_swap/src/features/skills/skills_setup_page.dart';
 
 class SkillSwapApp extends StatelessWidget {
   const SkillSwapApp({super.key});
@@ -23,10 +26,8 @@ class SkillSwapApp extends StatelessWidget {
         AppRoutes.home: (_) => const AuthGate(),
         AppRoutes.signUp: (_) => const SignUpPage(),
         AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
-        AppRoutes.addSkill: (_) => const SimplePlaceholderScreen(
-          title: 'Add Skill',
-          subtitle: 'Teaching and learning skill forms will come next.',
-        ),
+        AppRoutes.skillsSetup: (_) => const SkillsSetupPage(),
+        AppRoutes.manageSkills: (_) => const ManageSkillsPage(),
         AppRoutes.requestSwap: (_) => const SimplePlaceholderScreen(
           title: 'Request Swap',
           subtitle: 'Swap request flow is intentionally not connected yet.',
@@ -66,6 +67,18 @@ class SkillSwapApp extends StatelessWidget {
       );
     }
 
+    if (settings.name == AppRoutes.addSkill ||
+        settings.name == AppRoutes.editSkill) {
+      final arguments = settings.arguments is SkillFormArguments
+          ? settings.arguments! as SkillFormArguments
+          : const SkillFormArguments();
+
+      return MaterialPageRoute(
+        builder: (_) => SkillFormPage(arguments: arguments),
+        settings: settings,
+      );
+    }
+
     if (settings.name == AppRoutes.skillDetails) {
       final skillId = settings.arguments is String
           ? settings.arguments! as String
@@ -89,7 +102,10 @@ class AppRoutes {
   static const forgotPassword = '/auth/forgot-password';
   static const profileSetup = '/profile/setup';
   static const editProfile = '/profile/edit';
+  static const skillsSetup = '/skills/setup';
+  static const manageSkills = '/skills/manage';
   static const addSkill = '/skills/add';
+  static const editSkill = '/skills/edit';
   static const requestSwap = '/swaps/request';
   static const skillDetails = '/skills/details';
   static const chat = '/chat';

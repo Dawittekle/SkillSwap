@@ -124,7 +124,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
       if (!mounted) return;
       Navigator.of(
         context,
-      ).pushNamedAndRemoveUntil(AppRoutes.home, (_) => false);
+      ).pushNamedAndRemoveUntil(AppRoutes.skillsSetup, (_) => false);
     } catch (error) {
       if (!mounted) return;
       showAuthMessage(context, error.toString(), isError: true);
