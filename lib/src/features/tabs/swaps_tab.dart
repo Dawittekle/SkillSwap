@@ -325,6 +325,10 @@ class _SwapCardState extends State<_SwapCard> {
                 relatedRequestId: request.id,
               ),
             ),
+            onReview: () => Navigator.of(context).pushNamed(
+              AppRoutes.reviewSession,
+              arguments: ReviewSessionArguments(request: request),
+            ),
           ),
         ],
       ),
@@ -342,6 +346,7 @@ class _SwapActions extends StatelessWidget {
     required this.onCancel,
     required this.onComplete,
     required this.onMessage,
+    required this.onReview,
   });
 
   final String status;
@@ -352,6 +357,7 @@ class _SwapActions extends StatelessWidget {
   final VoidCallback onCancel;
   final VoidCallback onComplete;
   final VoidCallback onMessage;
+  final VoidCallback onReview;
 
   @override
   Widget build(BuildContext context) {
@@ -403,6 +409,29 @@ class _SwapActions extends StatelessWidget {
               icon: Icons.check_circle_outline,
               variant: AppButtonVariant.secondary,
               onPressed: isUpdating ? null : onComplete,
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (status == 'completed') {
+      return Row(
+        children: [
+          Expanded(
+            child: AppButton(
+              label: 'Message',
+              icon: Icons.mail_outline,
+              variant: AppButtonVariant.secondary,
+              onPressed: onMessage,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: AppButton(
+              label: 'Review',
+              icon: Icons.star_border_rounded,
+              onPressed: onReview,
             ),
           ),
         ],

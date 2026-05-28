@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:skill_swap/data/models/app_user.dart';
 import 'package:skill_swap/data/models/skill.dart' as firestore_skill;
+import 'package:skill_swap/data/repositories/review_repository.dart';
 import 'package:skill_swap/data/repositories/skill_repository.dart';
 import 'package:skill_swap/data/repositories/user_repository.dart';
 import 'package:skill_swap/src/app.dart';
@@ -8,6 +9,7 @@ import 'package:skill_swap/src/core/theme/app_colors.dart';
 import 'package:skill_swap/src/core/widgets/app_button.dart';
 import 'package:skill_swap/src/core/widgets/app_card.dart';
 import 'package:skill_swap/src/core/widgets/app_chip.dart';
+import 'package:skill_swap/src/features/reviews/review_widgets.dart';
 
 class PublicStudentProfilePage extends StatelessWidget {
   const PublicStudentProfilePage({
@@ -15,16 +17,19 @@ class PublicStudentProfilePage extends StatelessWidget {
     super.key,
     this.userRepository,
     this.skillRepository,
+    this.reviewRepository,
   });
 
   final String uid;
   final UserRepository? userRepository;
   final SkillRepository? skillRepository;
+  final ReviewRepository? reviewRepository;
 
   @override
   Widget build(BuildContext context) {
     final users = userRepository ?? UserRepository();
     final skills = skillRepository ?? SkillRepository();
+    final reviews = reviewRepository ?? ReviewRepository();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Student Profile')),
@@ -64,6 +69,7 @@ class PublicStudentProfilePage extends StatelessWidget {
                   user: user,
                   offered: offered,
                   wanted: wanted,
+                  reviewRepository: reviews,
                   skillError: skillSnapshot.error,
                 );
               },
@@ -80,12 +86,14 @@ class _PublicProfileContent extends StatelessWidget {
     required this.user,
     required this.offered,
     required this.wanted,
+    required this.reviewRepository,
     required this.skillError,
   });
 
   final AppUser user;
   final List<firestore_skill.Skill> offered;
   final List<firestore_skill.Skill> wanted;
+  final ReviewRepository reviewRepository;
   final Object? skillError;
 
   @override
@@ -173,6 +181,12 @@ class _PublicProfileContent extends StatelessWidget {
                 _SkillSection(
                   title: 'Skills they want to learn',
                   skills: wanted,
+                ),
+                const SizedBox(height: 22),
+                ReviewsSection(
+                  userId: user.uid,
+                  reviewRepository: reviewRepository,
+                  title: 'Student Reviews',
                 ),
                 const SizedBox(height: 26),
                 AppButton(

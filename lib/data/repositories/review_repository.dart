@@ -17,13 +17,38 @@ class ReviewRepository {
       final document = review.id.isEmpty
           ? _reviews.doc()
           : _reviews.doc(review.id);
+      final existingReview = await document.get();
+      if (existingReview.exists) {
+        throw Exception('You already reviewed this session.');
+      }
+
       final reviewToSave = review.id.isEmpty
           ? review.copyWith(id: document.id)
           : review;
 
       await document.set(reviewToSave.toMap());
+      try {
+        await _updateUserAverageRating(reviewToSave.revieweeId);
+      } catch (_) {
+        // Reviews should still save even if the demo rating summary update fails.
+      }
     } catch (error) {
+      if (error is Exception && error.toString().contains('already reviewed')) {
+        rethrow;
+      }
+
       throw friendlyFirestoreException(error, 'Could not create review.');
+    }
+  }
+
+  Future<bool> hasReviewForSession(String sessionId, String reviewerId) async {
+    try {
+      final documentId = reviewDocumentId(sessionId, reviewerId);
+      final document = await _reviews.doc(documentId).get();
+
+      return document.exists;
+    } catch (error) {
+      throw friendlyFirestoreException(error, 'Could not check review status.');
     }
   }
 
@@ -44,4 +69,26 @@ class ReviewRepository {
       return Review.fromMap(dataWithDocumentId(document, 'id'));
     }).toList();
   }
+
+  Future<void> _updateUserAverageRating(String userId) async {
+    final snapshot = await _reviews
+        .where('revieweeId', isEqualTo: userId)
+        .get();
+    final reviews = _reviewsFromSnapshot(snapshot);
+    if (reviews.isEmpty) return;
+
+    final total = reviews.fold<double>(
+      0,
+      (runningTotal, review) => runningTotal + review.rating,
+    );
+    final average = total / reviews.length;
+
+    await _firestore.collection('users').doc(userId).update({
+      'rating': average,
+    });
+  }
+}
+
+String reviewDocumentId(String sessionId, String reviewerId) {
+  return '${sessionId}_$reviewerId';
 }

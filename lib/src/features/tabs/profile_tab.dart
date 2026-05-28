@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:skill_swap/data/models/app_user.dart';
 import 'package:skill_swap/data/models/skill.dart' as firestore_skill;
+import 'package:skill_swap/data/repositories/review_repository.dart';
 import 'package:skill_swap/data/repositories/skill_repository.dart';
 import 'package:skill_swap/data/repositories/user_repository.dart';
 import 'package:skill_swap/data/services/auth_service.dart';
@@ -11,6 +12,7 @@ import 'package:skill_swap/src/core/widgets/app_card.dart';
 import 'package:skill_swap/src/core/widgets/app_chip.dart';
 import 'package:skill_swap/src/data/mock/mock_skills.dart';
 import 'package:skill_swap/src/features/auth/auth_helpers.dart';
+import 'package:skill_swap/src/features/reviews/review_widgets.dart';
 
 class ProfileTab extends StatefulWidget {
   const ProfileTab({
@@ -18,11 +20,13 @@ class ProfileTab extends StatefulWidget {
     this.authService,
     this.userRepository,
     this.skillRepository,
+    this.reviewRepository,
   });
 
   final AuthService? authService;
   final UserRepository? userRepository;
   final SkillRepository? skillRepository;
+  final ReviewRepository? reviewRepository;
 
   @override
   State<ProfileTab> createState() => _ProfileTabState();
@@ -36,6 +40,8 @@ class _ProfileTabState extends State<ProfileTab> {
       widget.userRepository ?? UserRepository();
   SkillRepository get _skillRepository =>
       widget.skillRepository ?? SkillRepository();
+  ReviewRepository get _reviewRepository =>
+      widget.reviewRepository ?? ReviewRepository();
 
   Future<void> _logout() async {
     setState(() => _isSigningOut = true);
@@ -99,6 +105,7 @@ class _ProfileTabState extends State<ProfileTab> {
         return _ProfileContent(
           user: user,
           skillRepository: _skillRepository,
+          reviewRepository: _reviewRepository,
           isSigningOut: _isSigningOut,
           onEdit: () => Navigator.of(
             context,
@@ -114,6 +121,7 @@ class _ProfileContent extends StatelessWidget {
   const _ProfileContent({
     required this.user,
     required this.skillRepository,
+    required this.reviewRepository,
     required this.isSigningOut,
     required this.onEdit,
     required this.onLogout,
@@ -121,6 +129,7 @@ class _ProfileContent extends StatelessWidget {
 
   final AppUser user;
   final SkillRepository skillRepository;
+  final ReviewRepository reviewRepository;
   final bool isSigningOut;
   final VoidCallback onEdit;
   final VoidCallback? onLogout;
@@ -198,6 +207,12 @@ class _ProfileContent extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           _ProfileSkills(uid: user.uid, skillRepository: skillRepository),
+          const SizedBox(height: 22),
+          ReviewsSection(
+            userId: user.uid,
+            reviewRepository: reviewRepository,
+            title: 'My Reviews',
+          ),
           const SizedBox(height: 26),
           AppButton(
             label: 'Edit Profile',

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:skill_swap/data/models/skill.dart' as firestore_skill;
+import 'package:skill_swap/data/models/swap_request.dart';
 import 'package:skill_swap/src/core/theme/app_theme.dart';
 import 'package:skill_swap/src/features/auth/auth_gate.dart';
 import 'package:skill_swap/src/features/auth/forgot_password_page.dart';
 import 'package:skill_swap/src/features/auth/profile_setup_page.dart';
 import 'package:skill_swap/src/features/auth/sign_up_page.dart';
 import 'package:skill_swap/src/features/chat/chat_page.dart';
-import 'package:skill_swap/src/features/placeholders/simple_placeholder_screen.dart';
 import 'package:skill_swap/src/features/profile/edit_profile_page.dart';
 import 'package:skill_swap/src/features/profile/public_student_profile_page.dart';
+import 'package:skill_swap/src/features/reviews/rate_session_page.dart';
 import 'package:skill_swap/src/features/skills/manage_skills_page.dart';
 import 'package:skill_swap/src/features/skills/skill_details_page.dart';
 import 'package:skill_swap/src/features/skills/skill_form_page.dart';
@@ -34,10 +35,6 @@ class SkillSwapApp extends StatelessWidget {
         AppRoutes.skillsSetup: (_) => const SkillsSetupPage(),
         AppRoutes.manageSkills: (_) => const ManageSkillsPage(),
         AppRoutes.requestSent: (_) => const RequestSentPage(),
-        AppRoutes.reviewSession: (_) => const SimplePlaceholderScreen(
-          title: 'Review Session',
-          subtitle: 'Session rating will be added after swaps are in place.',
-        ),
       },
     );
   }
@@ -136,6 +133,17 @@ class SkillSwapApp extends StatelessWidget {
       );
     }
 
+    if (settings.name == AppRoutes.reviewSession) {
+      final arguments = settings.arguments is ReviewSessionArguments
+          ? settings.arguments! as ReviewSessionArguments
+          : null;
+
+      return MaterialPageRoute(
+        builder: (_) => RateSessionPage(arguments: arguments),
+        settings: settings,
+      );
+    }
+
     return null;
   }
 }
@@ -164,6 +172,12 @@ class ChatArguments {
   final String otherUserId;
   final String otherUserName;
   final String relatedRequestId;
+}
+
+class ReviewSessionArguments {
+  const ReviewSessionArguments({required this.request});
+
+  final SwapRequest request;
 }
 
 class AppRoutes {
