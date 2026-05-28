@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:skill_swap/src/core/theme/app_theme.dart';
-import 'package:skill_swap/src/features/shell/bottom_navigation_shell.dart';
+import 'package:skill_swap/src/features/tabs/home_tab.dart';
 
 void main() {
-  testWidgets('SkillSwap shell renders the first task foundation', (
+  testWidgets('SkillSwap home renders the first task foundation', (
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(theme: AppTheme.light, home: const BottomNavigationShell()),
+      MaterialApp(
+        theme: AppTheme.light,
+        home: const Scaffold(body: HomeTab()),
+      ),
     );
 
     expect(find.text('SkillSwap'), findsOneWidget);
     expect(find.text('Best matches for you'), findsOneWidget);
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Discover'), findsOneWidget);
-    expect(find.text('Swaps'), findsOneWidget);
+    expect(find.text('Guitar Lesson with Abel'), findsOneWidget);
   });
 }

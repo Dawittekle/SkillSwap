@@ -5,6 +5,7 @@ import 'package:skill_swap/src/features/auth/forgot_password_page.dart';
 import 'package:skill_swap/src/features/auth/profile_setup_page.dart';
 import 'package:skill_swap/src/features/auth/sign_up_page.dart';
 import 'package:skill_swap/src/features/placeholders/simple_placeholder_screen.dart';
+import 'package:skill_swap/src/features/profile/edit_profile_page.dart';
 import 'package:skill_swap/src/features/skills/skill_details_page.dart';
 
 class SkillSwapApp extends StatelessWidget {
@@ -54,6 +55,17 @@ class SkillSwapApp extends StatelessWidget {
       );
     }
 
+    if (settings.name == AppRoutes.editProfile) {
+      final uid = settings.arguments is String
+          ? settings.arguments! as String
+          : '';
+
+      return MaterialPageRoute(
+        builder: (_) => EditProfilePage(uid: uid),
+        settings: settings,
+      );
+    }
+
     if (settings.name == AppRoutes.skillDetails) {
       final skillId = settings.arguments is String
           ? settings.arguments! as String
@@ -76,6 +88,7 @@ class AppRoutes {
   static const signUp = '/auth/sign-up';
   static const forgotPassword = '/auth/forgot-password';
   static const profileSetup = '/profile/setup';
+  static const editProfile = '/profile/edit';
   static const addSkill = '/skills/add';
   static const requestSwap = '/swaps/request';
   static const skillDetails = '/skills/details';
