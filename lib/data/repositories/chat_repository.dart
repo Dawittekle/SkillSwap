@@ -33,7 +33,7 @@ class ChatRepository {
       final document = _conversations.doc();
       final conversation = Conversation(
         id: document.id,
-        participants: [currentUserId, otherUserId]..sort(),
+        participants: [currentUserId, otherUserId],
         participantNames: participantNames,
         lastMessage: '',
         lastMessageAt: DateTime.now(),

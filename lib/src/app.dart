@@ -5,6 +5,7 @@ import 'package:skill_swap/src/features/auth/auth_gate.dart';
 import 'package:skill_swap/src/features/auth/forgot_password_page.dart';
 import 'package:skill_swap/src/features/auth/profile_setup_page.dart';
 import 'package:skill_swap/src/features/auth/sign_up_page.dart';
+import 'package:skill_swap/src/features/chat/chat_page.dart';
 import 'package:skill_swap/src/features/placeholders/simple_placeholder_screen.dart';
 import 'package:skill_swap/src/features/profile/edit_profile_page.dart';
 import 'package:skill_swap/src/features/profile/public_student_profile_page.dart';
@@ -33,10 +34,6 @@ class SkillSwapApp extends StatelessWidget {
         AppRoutes.skillsSetup: (_) => const SkillsSetupPage(),
         AppRoutes.manageSkills: (_) => const ManageSkillsPage(),
         AppRoutes.requestSent: (_) => const RequestSentPage(),
-        AppRoutes.chat: (_) => const SimplePlaceholderScreen(
-          title: 'Chat',
-          subtitle: 'Messaging screens will use mock conversations first.',
-        ),
         AppRoutes.reviewSession: (_) => const SimplePlaceholderScreen(
           title: 'Review Session',
           subtitle: 'Session rating will be added after swaps are in place.',
@@ -128,6 +125,17 @@ class SkillSwapApp extends StatelessWidget {
       );
     }
 
+    if (settings.name == AppRoutes.chat) {
+      final arguments = settings.arguments is ChatArguments
+          ? settings.arguments! as ChatArguments
+          : null;
+
+      return MaterialPageRoute(
+        builder: (_) => ChatPage(arguments: arguments),
+        settings: settings,
+      );
+    }
+
     return null;
   }
 }
@@ -142,6 +150,20 @@ class RequestSwapArguments {
   final firestore_skill.Skill selectedSkill;
   final String teacherId;
   final String teacherName;
+}
+
+class ChatArguments {
+  const ChatArguments({
+    this.conversationId = '',
+    this.otherUserId = '',
+    this.otherUserName = '',
+    this.relatedRequestId = '',
+  });
+
+  final String conversationId;
+  final String otherUserId;
+  final String otherUserName;
+  final String relatedRequestId;
 }
 
 class AppRoutes {

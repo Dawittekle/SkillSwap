@@ -178,8 +178,13 @@ class _PublicProfileContent extends StatelessWidget {
                 AppButton(
                   label: 'Message ${_firstName(user.fullName)}',
                   icon: Icons.chat_bubble_outline,
-                  onPressed: () =>
-                      Navigator.of(context).pushNamed(AppRoutes.chat),
+                  onPressed: () => Navigator.of(context).pushNamed(
+                    AppRoutes.chat,
+                    arguments: ChatArguments(
+                      otherUserId: user.uid,
+                      otherUserName: user.fullName,
+                    ),
+                  ),
                 ),
               ],
             ),

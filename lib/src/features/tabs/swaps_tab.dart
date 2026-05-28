@@ -237,6 +237,7 @@ class _SwapCardState extends State<_SwapCard> {
   Widget build(BuildContext context) {
     final request = widget.request;
     final otherName = _isIncoming ? request.fromUserName : request.toUserName;
+    final otherUserId = _isIncoming ? request.fromUserId : request.toUserId;
     final statusColor = _statusColor(request.status);
 
     return AppCard(
@@ -316,6 +317,14 @@ class _SwapCardState extends State<_SwapCard> {
             onDecline: () => _updateStatus('declined'),
             onCancel: () => _updateStatus('cancelled'),
             onComplete: () => _updateStatus('completed'),
+            onMessage: () => Navigator.of(context).pushNamed(
+              AppRoutes.chat,
+              arguments: ChatArguments(
+                otherUserId: otherUserId,
+                otherUserName: otherName,
+                relatedRequestId: request.id,
+              ),
+            ),
           ),
         ],
       ),
@@ -332,6 +341,7 @@ class _SwapActions extends StatelessWidget {
     required this.onDecline,
     required this.onCancel,
     required this.onComplete,
+    required this.onMessage,
   });
 
   final String status;
@@ -341,6 +351,7 @@ class _SwapActions extends StatelessWidget {
   final VoidCallback onDecline;
   final VoidCallback onCancel;
   final VoidCallback onComplete;
+  final VoidCallback onMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -382,7 +393,7 @@ class _SwapActions extends StatelessWidget {
             child: AppButton(
               label: 'Message',
               icon: Icons.mail_outline,
-              onPressed: () => Navigator.of(context).pushNamed(AppRoutes.chat),
+              onPressed: onMessage,
             ),
           ),
           const SizedBox(width: 12),
@@ -402,7 +413,7 @@ class _SwapActions extends StatelessWidget {
       label: 'Message',
       icon: Icons.mail_outline,
       variant: AppButtonVariant.secondary,
-      onPressed: () => Navigator.of(context).pushNamed(AppRoutes.chat),
+      onPressed: onMessage,
     );
   }
 }

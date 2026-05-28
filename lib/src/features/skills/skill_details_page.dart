@@ -222,8 +222,13 @@ class _SkillDetailsContent extends StatelessWidget {
                   label: 'Message ${_firstName(teacherName)}',
                   icon: Icons.chat_bubble_outline,
                   variant: AppButtonVariant.secondary,
-                  onPressed: () =>
-                      Navigator.of(context).pushNamed(AppRoutes.chat),
+                  onPressed: () => Navigator.of(context).pushNamed(
+                    AppRoutes.chat,
+                    arguments: ChatArguments(
+                      otherUserId: skill.ownerId,
+                      otherUserName: teacherName,
+                    ),
+                  ),
                 ),
               ],
             ),
