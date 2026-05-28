@@ -111,6 +111,22 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-28 Discover Firestore Connection
+
+### Completed
+- Connected Discover to active offered skills from the `skills` Firestore collection.
+- Filtered Discover results to exclude the current user's own skills.
+- Kept local search and category filtering for the demo.
+- Updated Skill Details to load Firestore skill data and the teacher profile from `users/{ownerId}`.
+- Passed selected skill and teacher context into the Request Swap placeholder route.
+- Added Public Student Profile for viewing another student's Firestore profile, offered skills, and wanted skills.
+- Added an empty state explaining that Discover needs active offered skills from other students.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
