@@ -1,219 +1,314 @@
 import 'package:flutter/material.dart';
+import 'package:skill_swap/data/models/app_user.dart';
+import 'package:skill_swap/data/models/skill.dart' as firestore_skill;
+import 'package:skill_swap/data/repositories/skill_repository.dart';
+import 'package:skill_swap/data/repositories/user_repository.dart';
 import 'package:skill_swap/src/app.dart';
 import 'package:skill_swap/src/core/theme/app_colors.dart';
 import 'package:skill_swap/src/core/widgets/app_button.dart';
 import 'package:skill_swap/src/core/widgets/app_card.dart';
 import 'package:skill_swap/src/core/widgets/app_chip.dart';
 import 'package:skill_swap/src/core/widgets/skill_card.dart';
-import 'package:skill_swap/src/data/mock/mock_skills.dart';
-import 'package:skill_swap/src/data/mock/mock_students.dart';
-import 'package:skill_swap/src/data/models/skill.dart';
-import 'package:skill_swap/src/data/models/student.dart';
+import 'package:skill_swap/src/features/skills/skill_ui_adapters.dart';
 
-class SkillDetailsPage extends StatelessWidget {
-  const SkillDetailsPage({required this.skillId, super.key});
+class SkillDetailsPage extends StatefulWidget {
+  const SkillDetailsPage({
+    required this.skillId,
+    this.skill,
+    super.key,
+    this.skillRepository,
+    this.userRepository,
+  });
 
   final String skillId;
+  final firestore_skill.Skill? skill;
+  final SkillRepository? skillRepository;
+  final UserRepository? userRepository;
+
+  @override
+  State<SkillDetailsPage> createState() => _SkillDetailsPageState();
+}
+
+class _SkillDetailsPageState extends State<SkillDetailsPage> {
+  SkillRepository get _skillRepository =>
+      widget.skillRepository ?? SkillRepository();
+  UserRepository get _userRepository =>
+      widget.userRepository ?? UserRepository();
+
+  late final Future<_SkillDetailsData?> _detailsFuture = _loadDetails();
+
+  Future<_SkillDetailsData?> _loadDetails() async {
+    final selectedSkill =
+        widget.skill ??
+        (widget.skillId.isNotEmpty
+            ? await _skillRepository.getSkill(widget.skillId)
+            : null);
+
+    if (selectedSkill == null) return null;
+
+    final teacher = await _userRepository.getUser(selectedSkill.ownerId);
+    return _SkillDetailsData(skill: selectedSkill, teacher: teacher);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final skill = _findSkill(skillId);
-    final owner = _findOwner(skill.ownerId);
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Skill Details')),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-          children: [
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AppCard(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 54,
-                                height: 54,
-                                decoration: BoxDecoration(
-                                  color: AppColors.tealTint,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Icon(
-                                  categoryIcon(skill.category),
-                                  color: AppColors.primaryDark,
-                                ),
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      skill.title,
-                                      style: textTheme.headlineMedium,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Offered by ${owner.name}',
-                                      style: textTheme.bodyMedium?.copyWith(
-                                        color: AppColors.textGray,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              StatusChip(
-                                label: levelLabel(skill.level),
-                                color: AppColors.warning,
-                              ),
-                              StatusChip(
-                                label: skill.category.toUpperCase(),
-                                color: AppColors.primaryGreen,
-                              ),
-                              StatusChip(
-                                label: skill.duration,
-                                color: AppColors.textGray,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-                          Text(skill.description, style: textTheme.bodyLarge),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    _OwnerCard(owner: owner, skill: skill),
-                    const SizedBox(height: 18),
-                    _DetailsSection(
-                      title: 'What you will practice',
-                      children: [
-                        for (final outcome in skill.outcomes)
-                          _DetailBullet(label: outcome),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    _DetailsSection(
-                      title: 'Session format',
-                      children: [
-                        _DetailRow(
-                          icon: Icons.schedule,
-                          label: 'Duration',
-                          value: skill.duration,
-                        ),
-                        _DetailRow(
-                          icon: Icons.place_outlined,
-                          label: 'Format',
-                          value: skill.meetingFormat,
-                        ),
-                        _DetailRow(
-                          icon: Icons.sell_outlined,
-                          label: 'Tags',
-                          value: skill.tags.join(', '),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 22),
-                    AppButton(
-                      label: 'Request Swap',
-                      icon: Icons.swap_horiz,
-                      onPressed: () => Navigator.of(
-                        context,
-                      ).pushNamed(AppRoutes.requestSwap),
-                    ),
-                    const SizedBox(height: 12),
-                    AppButton(
-                      label: 'Message ${owner.name.split(' ').first}',
-                      icon: Icons.chat_bubble_outline,
-                      variant: AppButtonVariant.secondary,
-                      onPressed: () =>
-                          Navigator.of(context).pushNamed(AppRoutes.chat),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+        child: FutureBuilder<_SkillDetailsData?>(
+          future: _detailsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primaryGreen),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return _DetailsMessage(message: snapshot.error.toString());
+            }
+
+            final details = snapshot.data;
+            if (details == null) {
+              return const _DetailsMessage(message: 'Skill not found.');
+            }
+
+            return _SkillDetailsContent(
+              skill: details.skill,
+              teacher: details.teacher,
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _OwnerCard extends StatelessWidget {
-  const _OwnerCard({required this.owner, required this.skill});
+class _SkillDetailsContent extends StatelessWidget {
+  const _SkillDetailsContent({required this.skill, required this.teacher});
 
-  final Student owner;
-  final Skill skill;
+  final firestore_skill.Skill skill;
+  final AppUser? teacher;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final uiSkill = uiSkillFromFirestore(skill);
+    final teacherName = teacher?.fullName.isNotEmpty == true
+        ? teacher!.fullName
+        : skill.ownerName;
+    final university = teacher?.university.isNotEmpty == true
+        ? teacher!.university
+        : skill.university;
 
-    return AppCard(
-      padding: const EdgeInsets.all(18),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: AppColors.tealTint,
-            child: Text(
-              owner.name.characters.first,
-              style: const TextStyle(
-                color: AppColors.primaryDark,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      children: [
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(owner.name, style: textTheme.titleLarge),
-                const SizedBox(height: 2),
-                Text(
-                  '${owner.school} - ${owner.year}',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textGray,
+                AppCard(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 54,
+                            height: 54,
+                            decoration: BoxDecoration(
+                              color: AppColors.tealTint,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(
+                              categoryIcon(skill.category),
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  skill.title,
+                                  style: textTheme.headlineMedium,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Offered by $teacherName',
+                                  style: textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.textGray,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          StatusChip(
+                            label: levelLabel(uiSkill.level),
+                            color: AppColors.warning,
+                          ),
+                          StatusChip(
+                            label: skill.category.toUpperCase(),
+                            color: AppColors.primaryGreen,
+                          ),
+                          StatusChip(
+                            label: skill.type.toUpperCase(),
+                            color: AppColors.textGray,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      Text(skill.description, style: textTheme.bodyLarge),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                const SizedBox(height: 18),
+                _OwnerCard(skill: skill, teacher: teacher),
+                const SizedBox(height: 18),
+                _DetailsSection(
+                  title: 'Skill information',
                   children: [
-                    StatusChip(
-                      label: '${owner.rating.toStringAsFixed(1)} rating',
-                      color: AppColors.warning,
-                      icon: Icons.star_border_rounded,
+                    _DetailRow(
+                      icon: Icons.category_outlined,
+                      label: 'Category',
+                      value: skill.category,
                     ),
-                    StatusChip(
-                      label: '${owner.reviewCount} reviews',
-                      color: AppColors.primaryGreen,
+                    _DetailRow(
+                      icon: Icons.trending_up,
+                      label: 'Level',
+                      value: skill.level,
+                    ),
+                    _DetailRow(
+                      icon: Icons.school_outlined,
+                      label: 'University',
+                      value: university.isEmpty ? 'Not shared yet' : university,
+                    ),
+                    _DetailRow(
+                      icon: Icons.swap_horiz,
+                      label: 'Exchange for',
+                      value: skill.exchangeFor.isEmpty
+                          ? 'Open to suggestions'
+                          : skill.exchangeFor,
                     ),
                   ],
+                ),
+                const SizedBox(height: 22),
+                AppButton(
+                  label: 'Request Swap',
+                  icon: Icons.swap_horiz,
+                  onPressed: () => Navigator.of(context).pushNamed(
+                    AppRoutes.requestSwap,
+                    arguments: RequestSwapArguments(
+                      selectedSkill: skill,
+                      teacherId: skill.ownerId,
+                      teacherName: teacherName,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                AppButton(
+                  label: 'Message ${_firstName(teacherName)}',
+                  icon: Icons.chat_bubble_outline,
+                  variant: AppButtonVariant.secondary,
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed(AppRoutes.chat),
                 ),
               ],
             ),
           ),
-          Icon(categoryIcon(skill.category), color: AppColors.primaryGreen),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+class _OwnerCard extends StatelessWidget {
+  const _OwnerCard({required this.skill, required this.teacher});
+
+  final firestore_skill.Skill skill;
+  final AppUser? teacher;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final owner = studentFromSkillOwner(skill, user: teacher);
+    final avatarLabel = owner.name.isEmpty ? '?' : owner.name.characters.first;
+
+    return AppCard(
+      padding: const EdgeInsets.all(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => Navigator.of(
+          context,
+        ).pushNamed(AppRoutes.publicProfile, arguments: skill.ownerId),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: AppColors.tealTint,
+              backgroundImage: teacher?.photoUrl.isNotEmpty == true
+                  ? NetworkImage(teacher!.photoUrl)
+                  : null,
+              child: teacher?.photoUrl.isNotEmpty == true
+                  ? null
+                  : Text(
+                      avatarLabel,
+                      style: const TextStyle(
+                        color: AppColors.primaryDark,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(owner.name, style: textTheme.titleLarge),
+                  const SizedBox(height: 2),
+                  Text(
+                    [
+                      owner.school,
+                      owner.year,
+                    ].where((item) => item.trim().isNotEmpty).join(' - '),
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textGray,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      StatusChip(
+                        label: '${owner.rating.toStringAsFixed(1)} rating',
+                        color: AppColors.warning,
+                        icon: Icons.star_border_rounded,
+                      ),
+                      StatusChip(
+                        label: '${owner.reviewCount} swaps',
+                        color: AppColors.primaryGreen,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Icon(categoryIcon(skill.category), color: AppColors.primaryGreen),
+          ],
+        ),
       ),
     );
   }
@@ -235,33 +330,6 @@ class _DetailsSection extends StatelessWidget {
           Text(title, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 14),
           ...children,
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailBullet extends StatelessWidget {
-  const _DetailBullet({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.check_circle_outline,
-            color: AppColors.success,
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
-          ),
         ],
       ),
     );
@@ -304,16 +372,34 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-Skill _findSkill(String id) {
-  return mockSkills.firstWhere(
-    (skill) => skill.id == id,
-    orElse: () => mockSkills.first,
-  );
+class _DetailsMessage extends StatelessWidget {
+  const _DetailsMessage({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        AppCard(
+          child: Text(message, style: Theme.of(context).textTheme.bodyLarge),
+        ),
+      ],
+    );
+  }
 }
 
-Student _findOwner(String ownerId) {
-  return mockStudents.firstWhere(
-    (student) => student.id == ownerId,
-    orElse: () => mockStudents.first,
-  );
+class _SkillDetailsData {
+  const _SkillDetailsData({required this.skill, required this.teacher});
+
+  final firestore_skill.Skill skill;
+  final AppUser? teacher;
+}
+
+String _firstName(String name) {
+  final trimmedName = name.trim();
+  if (trimmedName.isEmpty) return 'Student';
+
+  return trimmedName.split(' ').first;
 }

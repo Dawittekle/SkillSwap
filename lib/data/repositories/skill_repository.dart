@@ -34,6 +34,17 @@ class SkillRepository {
     }
   }
 
+  Future<Skill?> getSkill(String skillId) async {
+    try {
+      final document = await _skills.doc(skillId).get();
+      if (!document.exists) return null;
+
+      return Skill.fromMap(dataWithDocumentId(document, 'id'));
+    } catch (error) {
+      throw friendlyFirestoreException(error, 'Could not load skill.');
+    }
+  }
+
   Stream<List<Skill>> watchCurrentUserSkills(String uid) {
     return _skills
         .where('ownerId', isEqualTo: uid)
@@ -50,6 +61,7 @@ class SkillRepository {
   Stream<List<Skill>> watchOfferedSkillsExcludingUser(String uid) {
     return _skills
         .where('isActive', isEqualTo: true)
+        .where('type', isEqualTo: 'offered')
         .snapshots()
         .map((snapshot) {
           return _skillsFromSnapshot(

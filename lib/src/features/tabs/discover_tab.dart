@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:skill_swap/data/models/skill.dart' as firestore_skill;
+import 'package:skill_swap/data/repositories/skill_repository.dart';
+import 'package:skill_swap/data/services/auth_service.dart';
 import 'package:skill_swap/src/app.dart';
 import 'package:skill_swap/src/core/theme/app_colors.dart';
 import 'package:skill_swap/src/core/widgets/app_card.dart';
@@ -6,12 +9,13 @@ import 'package:skill_swap/src/core/widgets/app_chip.dart';
 import 'package:skill_swap/src/core/widgets/app_search_bar.dart';
 import 'package:skill_swap/src/core/widgets/skill_card.dart';
 import 'package:skill_swap/src/data/mock/mock_skills.dart';
-import 'package:skill_swap/src/data/mock/mock_students.dart';
-import 'package:skill_swap/src/data/models/skill.dart';
-import 'package:skill_swap/src/data/models/student.dart';
+import 'package:skill_swap/src/features/skills/skill_ui_adapters.dart';
 
 class DiscoverTab extends StatefulWidget {
-  const DiscoverTab({super.key});
+  const DiscoverTab({super.key, this.authService, this.skillRepository});
+
+  final AuthService? authService;
+  final SkillRepository? skillRepository;
 
   @override
   State<DiscoverTab> createState() => _DiscoverTabState();
@@ -22,24 +26,40 @@ class _DiscoverTabState extends State<DiscoverTab> {
   String _query = '';
   Set<String> _selectedMode = const {'offered'};
 
-  List<String> get _categories => [
+  AuthService get _authService => widget.authService ?? AuthService();
+  SkillRepository get _skillRepository =>
+      widget.skillRepository ?? SkillRepository();
+
+  List<String> _categoriesFor(List<firestore_skill.Skill> skills) => [
     'All',
-    ...mockSkills.map((skill) => skill.category).toSet(),
+    ...{
+      ...mockSkills.map((skill) => skill.category),
+      ...skills.map((skill) => skill.category).where((category) {
+        return category.trim().isNotEmpty;
+      }),
+    },
   ];
 
-  List<Skill> get _filteredSkills {
+  List<firestore_skill.Skill> _filteredSkills(
+    List<firestore_skill.Skill> skills,
+  ) {
     final normalizedQuery = _query.trim().toLowerCase();
 
-    return mockSkills.where((skill) {
+    return skills.where((skill) {
       final matchesCategory =
           _selectedCategory == 'All' || skill.category == _selectedCategory;
+      final matchesMode = _selectedMode.contains(skill.type);
       final matchesQuery =
           normalizedQuery.isEmpty ||
           skill.title.toLowerCase().contains(normalizedQuery) ||
           skill.description.toLowerCase().contains(normalizedQuery) ||
-          skill.tags.any((tag) => tag.toLowerCase().contains(normalizedQuery));
+          skill.category.toLowerCase().contains(normalizedQuery) ||
+          skill.level.toLowerCase().contains(normalizedQuery) ||
+          skill.exchangeFor.toLowerCase().contains(normalizedQuery) ||
+          skill.ownerName.toLowerCase().contains(normalizedQuery) ||
+          skill.university.toLowerCase().contains(normalizedQuery);
 
-      return matchesCategory && matchesQuery;
+      return matchesCategory && matchesMode && matchesQuery;
     }).toList();
   }
 
@@ -49,59 +69,97 @@ class _DiscoverTabState extends State<DiscoverTab> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= 760;
-          final skills = _filteredSkills;
+          final currentUser = _authService.currentUser;
 
-          return ListView(
-            padding: EdgeInsets.fromLTRB(
-              isWide ? 32 : 16,
-              18,
-              isWide ? 32 : 16,
-              96,
+          if (currentUser == null) {
+            return const Center(
+              child: Text('Please login to discover skills.'),
+            );
+          }
+
+          return StreamBuilder<List<firestore_skill.Skill>>(
+            stream: _skillRepository.watchOfferedSkillsExcludingUser(
+              currentUser.uid,
             ),
-            children: [
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 920),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const _DiscoverHeader(),
-                      const SizedBox(height: 16),
-                      SkillSearchBar(
-                        hintText: 'Search for Python, Guitar, French...',
-                        onChanged: (value) => setState(() => _query = value),
-                        onFilterPressed: () {},
-                      ),
-                      const SizedBox(height: 20),
-                      _CategoryScroller(
-                        categories: _categories,
-                        selectedCategory: _selectedCategory,
-                        onSelected: (category) {
-                          setState(() => _selectedCategory = category);
-                        },
-                      ),
-                      const SizedBox(height: 22),
-                      _ModeSwitcher(
-                        selectedMode: _selectedMode,
-                        onChanged: (selection) {
-                          setState(() => _selectedMode = selection);
-                        },
-                      ),
-                      const SizedBox(height: 20),
-                      _DiscoverSummary(
-                        resultCount: skills.length,
-                        selectedCategory: _selectedCategory,
-                      ),
-                      const SizedBox(height: 16),
-                      if (skills.isEmpty)
-                        const _EmptySkillsState()
-                      else
-                        _SkillResultsGrid(skills: skills, isWide: isWide),
-                    ],
-                  ),
+            builder: (context, snapshot) {
+              final allSkills = snapshot.data ?? [];
+              final skills = _filteredSkills(allSkills);
+
+              return ListView(
+                padding: EdgeInsets.fromLTRB(
+                  isWide ? 32 : 16,
+                  18,
+                  isWide ? 32 : 16,
+                  96,
                 ),
-              ),
-            ],
+                children: [
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 920),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const _DiscoverHeader(),
+                          const SizedBox(height: 16),
+                          SkillSearchBar(
+                            hintText: 'Search for Python, Guitar, French...',
+                            onChanged: (value) =>
+                                setState(() => _query = value),
+                            onFilterPressed: () {},
+                          ),
+                          const SizedBox(height: 20),
+                          _CategoryScroller(
+                            categories: _categoriesFor(allSkills),
+                            selectedCategory: _selectedCategory,
+                            onSelected: (category) {
+                              setState(() => _selectedCategory = category);
+                            },
+                          ),
+                          const SizedBox(height: 22),
+                          _ModeSwitcher(
+                            selectedMode: _selectedMode,
+                            onChanged: (selection) {
+                              setState(() => _selectedMode = selection);
+                            },
+                          ),
+                          const SizedBox(height: 20),
+                          _DiscoverSummary(
+                            resultCount: skills.length,
+                            selectedCategory: _selectedCategory,
+                          ),
+                          const SizedBox(height: 16),
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(24),
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primaryGreen,
+                                ),
+                              ),
+                            )
+                          else if (snapshot.hasError)
+                            _DiscoverErrorState(message: snapshot.error)
+                          else if (allSkills.isEmpty)
+                            const _EmptySkillsState(
+                              title: 'No student skills yet',
+                              message:
+                                  'Discover needs active offered skills from other students.',
+                            )
+                          else if (skills.isEmpty)
+                            const _EmptySkillsState(
+                              title: 'No skills found',
+                              message: 'Try another search term or category.',
+                            )
+                          else
+                            _SkillResultsGrid(skills: skills, isWide: isWide),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           );
         },
       ),
@@ -254,7 +312,7 @@ class _DiscoverSummary extends StatelessWidget {
 class _SkillResultsGrid extends StatelessWidget {
   const _SkillResultsGrid({required this.skills, required this.isWide});
 
-  final List<Skill> skills;
+  final List<firestore_skill.Skill> skills;
   final bool isWide;
 
   @override
@@ -264,10 +322,9 @@ class _SkillResultsGrid extends StatelessWidget {
         children: [
           for (final skill in skills) ...[
             SkillCard(
-              skill: skill,
-              owner: _ownerFor(skill),
-              onConnect: () =>
-                  Navigator.of(context).pushNamed(AppRoutes.requestSwap),
+              skill: uiSkillFromFirestore(skill),
+              owner: studentFromSkillOwner(skill),
+              onConnect: () => _openRequestSwap(context, skill),
               onViewDetails: () => _openDetails(context, skill),
             ),
             const SizedBox(height: 14),
@@ -290,25 +347,36 @@ class _SkillResultsGrid extends StatelessWidget {
         final skill = skills[index];
 
         return SkillCard(
-          skill: skill,
-          owner: _ownerFor(skill),
-          onConnect: () =>
-              Navigator.of(context).pushNamed(AppRoutes.requestSwap),
+          skill: uiSkillFromFirestore(skill),
+          owner: studentFromSkillOwner(skill),
+          onConnect: () => _openRequestSwap(context, skill),
           onViewDetails: () => _openDetails(context, skill),
         );
       },
     );
   }
 
-  void _openDetails(BuildContext context, Skill skill) {
-    Navigator.of(
-      context,
-    ).pushNamed(AppRoutes.skillDetails, arguments: skill.id);
+  void _openDetails(BuildContext context, firestore_skill.Skill skill) {
+    Navigator.of(context).pushNamed(AppRoutes.skillDetails, arguments: skill);
+  }
+
+  void _openRequestSwap(BuildContext context, firestore_skill.Skill skill) {
+    Navigator.of(context).pushNamed(
+      AppRoutes.requestSwap,
+      arguments: RequestSwapArguments(
+        selectedSkill: skill,
+        teacherName: skill.ownerName,
+        teacherId: skill.ownerId,
+      ),
+    );
   }
 }
 
 class _EmptySkillsState extends StatelessWidget {
-  const _EmptySkillsState();
+  const _EmptySkillsState({required this.title, required this.message});
+
+  final String title;
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -325,13 +393,10 @@ class _EmptySkillsState extends StatelessWidget {
             child: const Icon(Icons.search_off, color: AppColors.primaryDark),
           ),
           const SizedBox(height: 14),
-          Text(
-            'No skills found',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text(title, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 6),
           Text(
-            'Try another search term or category.',
+            message,
             textAlign: TextAlign.center,
             style: Theme.of(
               context,
@@ -343,9 +408,18 @@ class _EmptySkillsState extends StatelessWidget {
   }
 }
 
-Student _ownerFor(Skill skill) {
-  return mockStudents.firstWhere(
-    (student) => student.id == skill.ownerId,
-    orElse: () => mockStudents.first,
-  );
+class _DiscoverErrorState extends StatelessWidget {
+  const _DiscoverErrorState({required this.message});
+
+  final Object? message;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Text(
+        message?.toString() ?? 'Could not load discover skills.',
+        style: Theme.of(context).textTheme.bodyLarge,
+      ),
+    );
+  }
 }

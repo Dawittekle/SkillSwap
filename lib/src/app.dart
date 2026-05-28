@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:skill_swap/data/models/skill.dart' as firestore_skill;
 import 'package:skill_swap/src/core/theme/app_theme.dart';
 import 'package:skill_swap/src/features/auth/auth_gate.dart';
 import 'package:skill_swap/src/features/auth/forgot_password_page.dart';
@@ -6,6 +7,7 @@ import 'package:skill_swap/src/features/auth/profile_setup_page.dart';
 import 'package:skill_swap/src/features/auth/sign_up_page.dart';
 import 'package:skill_swap/src/features/placeholders/simple_placeholder_screen.dart';
 import 'package:skill_swap/src/features/profile/edit_profile_page.dart';
+import 'package:skill_swap/src/features/profile/public_student_profile_page.dart';
 import 'package:skill_swap/src/features/skills/manage_skills_page.dart';
 import 'package:skill_swap/src/features/skills/skill_details_page.dart';
 import 'package:skill_swap/src/features/skills/skill_form_page.dart';
@@ -28,10 +30,6 @@ class SkillSwapApp extends StatelessWidget {
         AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
         AppRoutes.skillsSetup: (_) => const SkillsSetupPage(),
         AppRoutes.manageSkills: (_) => const ManageSkillsPage(),
-        AppRoutes.requestSwap: (_) => const SimplePlaceholderScreen(
-          title: 'Request Swap',
-          subtitle: 'Swap request flow is intentionally not connected yet.',
-        ),
         AppRoutes.chat: (_) => const SimplePlaceholderScreen(
           title: 'Chat',
           subtitle: 'Messaging screens will use mock conversations first.',
@@ -67,6 +65,17 @@ class SkillSwapApp extends StatelessWidget {
       );
     }
 
+    if (settings.name == AppRoutes.publicProfile) {
+      final uid = settings.arguments is String
+          ? settings.arguments! as String
+          : '';
+
+      return MaterialPageRoute(
+        builder: (_) => PublicStudentProfilePage(uid: uid),
+        settings: settings,
+      );
+    }
+
     if (settings.name == AppRoutes.addSkill ||
         settings.name == AppRoutes.editSkill) {
       final arguments = settings.arguments is SkillFormArguments
@@ -80,18 +89,49 @@ class SkillSwapApp extends StatelessWidget {
     }
 
     if (settings.name == AppRoutes.skillDetails) {
-      final skillId = settings.arguments is String
-          ? settings.arguments! as String
-          : '';
+      final selectedSkill = settings.arguments is firestore_skill.Skill
+          ? settings.arguments! as firestore_skill.Skill
+          : null;
+      final skillId =
+          selectedSkill?.id ??
+          (settings.arguments is String ? settings.arguments! as String : '');
 
       return MaterialPageRoute(
-        builder: (_) => SkillDetailsPage(skillId: skillId),
+        builder: (_) =>
+            SkillDetailsPage(skillId: skillId, skill: selectedSkill),
+        settings: settings,
+      );
+    }
+
+    if (settings.name == AppRoutes.requestSwap) {
+      final arguments = settings.arguments is RequestSwapArguments
+          ? settings.arguments! as RequestSwapArguments
+          : null;
+      final subtitle = arguments == null
+          ? 'Swap request flow is intentionally not connected yet.'
+          : 'Swap request flow for ${arguments.selectedSkill.title} with ${arguments.teacherName} will be connected next.';
+
+      return MaterialPageRoute(
+        builder: (_) =>
+            SimplePlaceholderScreen(title: 'Request Swap', subtitle: subtitle),
         settings: settings,
       );
     }
 
     return null;
   }
+}
+
+class RequestSwapArguments {
+  const RequestSwapArguments({
+    required this.selectedSkill,
+    required this.teacherId,
+    required this.teacherName,
+  });
+
+  final firestore_skill.Skill selectedSkill;
+  final String teacherId;
+  final String teacherName;
 }
 
 class AppRoutes {
@@ -102,6 +142,7 @@ class AppRoutes {
   static const forgotPassword = '/auth/forgot-password';
   static const profileSetup = '/profile/setup';
   static const editProfile = '/profile/edit';
+  static const publicProfile = '/profile/public';
   static const skillsSetup = '/skills/setup';
   static const manageSkills = '/skills/manage';
   static const addSkill = '/skills/add';
