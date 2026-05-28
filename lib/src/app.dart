@@ -12,6 +12,8 @@ import 'package:skill_swap/src/features/skills/manage_skills_page.dart';
 import 'package:skill_swap/src/features/skills/skill_details_page.dart';
 import 'package:skill_swap/src/features/skills/skill_form_page.dart';
 import 'package:skill_swap/src/features/skills/skills_setup_page.dart';
+import 'package:skill_swap/src/features/swaps/request_sent_page.dart';
+import 'package:skill_swap/src/features/swaps/request_swap_page.dart';
 
 class SkillSwapApp extends StatelessWidget {
   const SkillSwapApp({super.key});
@@ -30,6 +32,7 @@ class SkillSwapApp extends StatelessWidget {
         AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
         AppRoutes.skillsSetup: (_) => const SkillsSetupPage(),
         AppRoutes.manageSkills: (_) => const ManageSkillsPage(),
+        AppRoutes.requestSent: (_) => const RequestSentPage(),
         AppRoutes.chat: (_) => const SimplePlaceholderScreen(
           title: 'Chat',
           subtitle: 'Messaging screens will use mock conversations first.',
@@ -107,13 +110,20 @@ class SkillSwapApp extends StatelessWidget {
       final arguments = settings.arguments is RequestSwapArguments
           ? settings.arguments! as RequestSwapArguments
           : null;
-      final subtitle = arguments == null
-          ? 'Swap request flow is intentionally not connected yet.'
-          : 'Swap request flow for ${arguments.selectedSkill.title} with ${arguments.teacherName} will be connected next.';
 
       return MaterialPageRoute(
-        builder: (_) =>
-            SimplePlaceholderScreen(title: 'Request Swap', subtitle: subtitle),
+        builder: (_) => RequestSwapPage(arguments: arguments),
+        settings: settings,
+      );
+    }
+
+    if (settings.name == AppRoutes.requestSent) {
+      final requestId = settings.arguments is String
+          ? settings.arguments! as String
+          : '';
+
+      return MaterialPageRoute(
+        builder: (_) => RequestSentPage(requestId: requestId),
         settings: settings,
       );
     }
@@ -148,6 +158,7 @@ class AppRoutes {
   static const addSkill = '/skills/add';
   static const editSkill = '/skills/edit';
   static const requestSwap = '/swaps/request';
+  static const requestSent = '/swaps/request-sent';
   static const skillDetails = '/skills/details';
   static const chat = '/chat';
   static const reviewSession = '/sessions/review';
