@@ -217,6 +217,22 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-29 Navigation And Notification Fixes
+
+### Completed
+- Changed Home Discover actions to switch to the existing Discover bottom-nav tab instead of pushing a standalone Discover page.
+- Changed the Home notification bell to switch to the Messages tab.
+- Connected Profile swap count to real completed incoming/outgoing swap requests.
+- Added unread conversation tracking using the existing message `readBy` data plus conversation `unreadBy` summary.
+- Added a Messages nav badge showing unread conversation count.
+- Added a per-conversation unread dot in the Messages list.
+- Marked conversations and messages as read when opening a chat.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
