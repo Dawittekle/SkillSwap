@@ -26,6 +26,7 @@ class HomeTab extends StatelessWidget {
     this.reviewRepository,
     this.chatRepository,
     this.previewData = false,
+    this.onSelectTab,
   });
 
   final AuthService? authService;
@@ -35,6 +36,7 @@ class HomeTab extends StatelessWidget {
   final ReviewRepository? reviewRepository;
   final ChatRepository? chatRepository;
   final bool previewData;
+  final ValueChanged<int>? onSelectTab;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +79,7 @@ class HomeTab extends StatelessWidget {
           swapRepository: swapRepository ?? SwapRepository(),
           reviewRepository: reviewRepository ?? ReviewRepository(),
           chatRepository: chatRepository ?? ChatRepository(),
+          onSelectTab: onSelectTab,
         );
       },
     );
@@ -90,6 +93,7 @@ class _HomeDataStreams extends StatelessWidget {
     required this.swapRepository,
     required this.reviewRepository,
     required this.chatRepository,
+    required this.onSelectTab,
   });
 
   final AppUser user;
@@ -97,6 +101,7 @@ class _HomeDataStreams extends StatelessWidget {
   final SwapRepository swapRepository;
   final ReviewRepository reviewRepository;
   final ChatRepository chatRepository;
+  final ValueChanged<int>? onSelectTab;
 
   @override
   Widget build(BuildContext context) {
@@ -148,7 +153,10 @@ class _HomeDataStreams extends StatelessWidget {
                               conversations: conversations,
                             );
 
-                            return _HomeContent(data: homeData);
+                            return _HomeContent(
+                              data: homeData,
+                              onSelectTab: onSelectTab,
+                            );
                           },
                         );
                       },
@@ -165,9 +173,28 @@ class _HomeDataStreams extends StatelessWidget {
 }
 
 class _HomeContent extends StatelessWidget {
-  const _HomeContent({required this.data});
+  const _HomeContent({required this.data, this.onSelectTab});
 
   final _HomeData data;
+  final ValueChanged<int>? onSelectTab;
+
+  void _openDiscover(BuildContext context) {
+    if (onSelectTab != null) {
+      onSelectTab!(1);
+      return;
+    }
+
+    Navigator.of(context).pushNamed(AppRoutes.discover);
+  }
+
+  void _openMessages(BuildContext context) {
+    if (onSelectTab != null) {
+      onSelectTab!(3);
+      return;
+    }
+
+    Navigator.of(context).pushNamed(AppRoutes.messages);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -190,21 +217,28 @@ class _HomeContent extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _HomeHeader(user: data.user),
+                      _HomeHeader(
+                        user: data.user,
+                        onOpenMessages: () => _openMessages(context),
+                      ),
                       const SizedBox(height: 26),
                       _Greeting(summary: data.summary),
                       const SizedBox(height: 16),
-                      const _SearchField(),
+                      _SearchField(
+                        onOpenDiscover: () => _openDiscover(context),
+                      ),
                       const SizedBox(height: 24),
-                      _MatchSummary(summary: data.summary),
+                      _MatchSummary(
+                        summary: data.summary,
+                        onOpenDiscover: () => _openDiscover(context),
+                      ),
                       const SizedBox(height: 24),
                       _CategoryRail(categories: data.categories),
                       const SizedBox(height: 28),
                       _SectionHeader(
                         title: 'Best matches for you',
                         actionLabel: 'See all',
-                        onAction: () =>
-                            Navigator.of(context).pushNamed(AppRoutes.discover),
+                        onAction: () => _openDiscover(context),
                       ),
                       const SizedBox(height: 12),
                       _ResponsiveMatchGrid(
@@ -256,9 +290,10 @@ class _HomeContent extends StatelessWidget {
 }
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.user});
+  const _HomeHeader({required this.user, required this.onOpenMessages});
 
   final AppUser user;
+  final VoidCallback onOpenMessages;
 
   @override
   Widget build(BuildContext context) {
@@ -285,7 +320,7 @@ class _HomeHeader extends StatelessWidget {
         ),
         const Spacer(),
         IconButton(
-          onPressed: () => Navigator.of(context).pushNamed(AppRoutes.messages),
+          onPressed: onOpenMessages,
           icon: const Icon(Icons.notifications_none),
           tooltip: 'Notifications',
         ),
@@ -334,18 +369,20 @@ class _Greeting extends StatelessWidget {
 }
 
 class _SearchField extends StatelessWidget {
-  const _SearchField();
+  const _SearchField({required this.onOpenDiscover});
+
+  final VoidCallback onOpenDiscover;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       textInputAction: TextInputAction.search,
-      onSubmitted: (_) => Navigator.of(context).pushNamed(AppRoutes.discover),
+      onSubmitted: (_) => onOpenDiscover(),
       decoration: InputDecoration(
         prefixIcon: const Icon(Icons.search),
         hintText: 'Search skills or students',
         suffixIcon: IconButton(
-          onPressed: () => Navigator.of(context).pushNamed(AppRoutes.discover),
+          onPressed: onOpenDiscover,
           icon: const Icon(Icons.tune),
           tooltip: 'Filters',
         ),
@@ -355,9 +392,10 @@ class _SearchField extends StatelessWidget {
 }
 
 class _MatchSummary extends StatelessWidget {
-  const _MatchSummary({required this.summary});
+  const _MatchSummary({required this.summary, required this.onOpenDiscover});
 
   final _HomeSummary summary;
+  final VoidCallback onOpenDiscover;
 
   @override
   Widget build(BuildContext context) {
@@ -407,8 +445,7 @@ class _MatchSummary extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FilledButton(
-                onPressed: () =>
-                    Navigator.of(context).pushNamed(AppRoutes.discover),
+                onPressed: onOpenDiscover,
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.cardWhite,
                   foregroundColor: AppColors.primaryDark,

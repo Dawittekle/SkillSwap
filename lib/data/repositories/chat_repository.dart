@@ -38,6 +38,8 @@ class ChatRepository {
         lastMessage: '',
         lastMessageAt: DateTime.now(),
         relatedRequestId: relatedRequestId ?? '',
+        lastSenderId: '',
+        unreadBy: const [],
       );
 
       await document.set(conversation.toMap());
@@ -60,6 +62,14 @@ class ChatRepository {
         });
   }
 
+  Stream<int> watchUnreadConversationCount(String uid) {
+    return watchUserConversations(uid).map((conversations) {
+      return conversations.where((conversation) {
+        return conversation.unreadBy.contains(uid);
+      }).length;
+    });
+  }
+
   Stream<List<ChatMessage>> watchMessages(String conversationId) {
     return _messages(conversationId)
         .orderBy('createdAt')
@@ -72,6 +82,14 @@ class ChatRepository {
 
   Future<void> sendMessage(String conversationId, ChatMessage message) async {
     try {
+      final conversationDocument = _conversations.doc(conversationId);
+      final conversationSnapshot = await conversationDocument.get();
+      final conversation = Conversation.fromMap(
+        dataWithDocumentId(conversationSnapshot, 'id'),
+      );
+      final unreadBy = conversation.participants.where((userId) {
+        return userId != message.senderId;
+      }).toList();
       final messageDocument = message.id.isEmpty
           ? _messages(conversationId).doc()
           : _messages(conversationId).doc(message.id);
@@ -82,14 +100,43 @@ class ChatRepository {
 
       final batch = _firestore.batch();
       batch.set(messageDocument, messageToSave.toMap());
-      batch.update(_conversations.doc(conversationId), {
+      batch.update(conversationDocument, {
         'lastMessage': message.text,
         'lastMessageAt': Timestamp.fromDate(message.createdAt),
+        'lastSenderId': message.senderId,
+        'unreadBy': unreadBy,
       });
 
       await batch.commit();
     } catch (error) {
       throw friendlyFirestoreException(error, 'Could not send message.');
+    }
+  }
+
+  Future<void> markConversationRead(String conversationId, String uid) async {
+    try {
+      final unreadMessages = await _messages(conversationId).get();
+      final batch = _firestore.batch();
+
+      batch.update(_conversations.doc(conversationId), {
+        'unreadBy': FieldValue.arrayRemove([uid]),
+      });
+
+      for (final document in unreadMessages.docs) {
+        final message = ChatMessage.fromMap(dataWithDocumentId(document, 'id'));
+        final shouldMarkRead =
+            message.senderId != uid && !message.readBy.contains(uid);
+
+        if (shouldMarkRead) {
+          batch.update(document.reference, {
+            'readBy': FieldValue.arrayUnion([uid]),
+          });
+        }
+      }
+
+      await batch.commit();
+    } catch (error) {
+      throw friendlyFirestoreException(error, 'Could not mark messages read.');
     }
   }
 

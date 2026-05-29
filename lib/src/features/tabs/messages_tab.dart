@@ -89,6 +89,7 @@ class _ConversationCard extends StatelessWidget {
     final lastMessage = conversation.lastMessage.isEmpty
         ? 'No messages yet'
         : conversation.lastMessage;
+    final hasUnread = conversation.unreadBy.contains(currentUserId);
 
     return AppCard(
       padding: const EdgeInsets.all(16),
@@ -130,9 +131,25 @@ class _ConversationCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            Text(
-              _timeLabel(conversation.lastMessageAt),
-              style: Theme.of(context).textTheme.labelMedium,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _timeLabel(conversation.lastMessageAt),
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+                if (hasUnread) ...[
+                  const SizedBox(height: 6),
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: AppColors.accentGold,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),

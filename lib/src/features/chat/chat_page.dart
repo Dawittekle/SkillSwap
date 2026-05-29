@@ -51,8 +51,13 @@ class _ChatPageState extends State<ChatPage> {
 
     final args = widget.arguments;
     if (args?.conversationId.isNotEmpty == true) {
+      await _chatRepository.markConversationRead(
+        args!.conversationId,
+        currentUser.uid,
+      );
+
       return _ChatStartData(
-        conversationId: args!.conversationId,
+        conversationId: args.conversationId,
         currentUserId: currentUser.uid,
         title: args.otherUserName.isEmpty ? 'Chat' : args.otherUserName,
       );
@@ -71,6 +76,7 @@ class _ChatPageState extends State<ChatPage> {
       {currentUser.uid: currentName, args.otherUserId: otherName},
       relatedRequestId: args.relatedRequestId,
     );
+    await _chatRepository.markConversationRead(conversationId, currentUser.uid);
 
     return _ChatStartData(
       conversationId: conversationId,

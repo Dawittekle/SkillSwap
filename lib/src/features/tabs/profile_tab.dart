@@ -2,8 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:skill_swap/data/models/app_user.dart';
 import 'package:skill_swap/data/models/skill.dart' as firestore_skill;
+import 'package:skill_swap/data/models/swap_request.dart';
 import 'package:skill_swap/data/repositories/review_repository.dart';
 import 'package:skill_swap/data/repositories/skill_repository.dart';
+import 'package:skill_swap/data/repositories/swap_repository.dart';
 import 'package:skill_swap/data/repositories/user_repository.dart';
 import 'package:skill_swap/data/services/auth_service.dart';
 import 'package:skill_swap/data/services/demo_seed_service.dart';
@@ -24,6 +26,7 @@ class ProfileTab extends StatefulWidget {
     this.skillRepository,
     this.reviewRepository,
     this.demoSeedService,
+    this.swapRepository,
   });
 
   final AuthService? authService;
@@ -31,6 +34,7 @@ class ProfileTab extends StatefulWidget {
   final SkillRepository? skillRepository;
   final ReviewRepository? reviewRepository;
   final DemoSeedService? demoSeedService;
+  final SwapRepository? swapRepository;
 
   @override
   State<ProfileTab> createState() => _ProfileTabState();
@@ -48,6 +52,8 @@ class _ProfileTabState extends State<ProfileTab> {
       widget.reviewRepository ?? ReviewRepository();
   DemoSeedService get _demoSeedService =>
       widget.demoSeedService ?? DemoSeedService();
+  SwapRepository get _swapRepository =>
+      widget.swapRepository ?? SwapRepository();
 
   Future<void> _logout() async {
     setState(() => _isSigningOut = true);
@@ -108,11 +114,12 @@ class _ProfileTabState extends State<ProfileTab> {
           );
         }
 
-        return _ProfileContent(
+        return _ProfileWithSwapCount(
           user: user,
           skillRepository: _skillRepository,
           reviewRepository: _reviewRepository,
           demoSeedService: _demoSeedService,
+          swapRepository: _swapRepository,
           isSigningOut: _isSigningOut,
           onEdit: () => Navigator.of(
             context,
@@ -124,9 +131,62 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 }
 
+class _ProfileWithSwapCount extends StatelessWidget {
+  const _ProfileWithSwapCount({
+    required this.user,
+    required this.skillRepository,
+    required this.reviewRepository,
+    required this.demoSeedService,
+    required this.swapRepository,
+    required this.isSigningOut,
+    required this.onEdit,
+    required this.onLogout,
+  });
+
+  final AppUser user;
+  final SkillRepository skillRepository;
+  final ReviewRepository reviewRepository;
+  final DemoSeedService demoSeedService;
+  final SwapRepository swapRepository;
+  final bool isSigningOut;
+  final VoidCallback onEdit;
+  final VoidCallback? onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<SwapRequest>>(
+      stream: swapRepository.watchIncomingRequests(user.uid),
+      builder: (context, incomingSnapshot) {
+        return StreamBuilder<List<SwapRequest>>(
+          stream: swapRepository.watchOutgoingRequests(user.uid),
+          builder: (context, outgoingSnapshot) {
+            final incoming = incomingSnapshot.data ?? [];
+            final outgoing = outgoingSnapshot.data ?? [];
+            final completedSwaps = [...incoming, ...outgoing].where((request) {
+              return request.status == 'completed';
+            }).length;
+
+            return _ProfileContent(
+              user: user,
+              completedSwaps: completedSwaps,
+              skillRepository: skillRepository,
+              reviewRepository: reviewRepository,
+              demoSeedService: demoSeedService,
+              isSigningOut: isSigningOut,
+              onEdit: onEdit,
+              onLogout: onLogout,
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
 class _ProfileContent extends StatelessWidget {
   const _ProfileContent({
     required this.user,
+    required this.completedSwaps,
     required this.skillRepository,
     required this.reviewRepository,
     required this.demoSeedService,
@@ -136,6 +196,7 @@ class _ProfileContent extends StatelessWidget {
   });
 
   final AppUser user;
+  final int completedSwaps;
   final SkillRepository skillRepository;
   final ReviewRepository reviewRepository;
   final DemoSeedService demoSeedService;
@@ -200,7 +261,7 @@ class _ProfileContent extends StatelessWidget {
                       icon: Icons.star,
                     ),
                     StatusChip(
-                      label: '${user.completedSwaps} Swaps',
+                      label: '$completedSwaps Swaps',
                       color: AppColors.primaryGreen,
                       icon: Icons.swap_horiz,
                     ),

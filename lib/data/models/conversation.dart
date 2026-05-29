@@ -8,6 +8,8 @@ class Conversation {
     required this.lastMessage,
     required this.lastMessageAt,
     required this.relatedRequestId,
+    required this.lastSenderId,
+    required this.unreadBy,
   });
 
   final String id;
@@ -16,6 +18,8 @@ class Conversation {
   final String lastMessage;
   final DateTime lastMessageAt;
   final String relatedRequestId;
+  final String lastSenderId;
+  final List<String> unreadBy;
 
   factory Conversation.fromMap(Map<String, dynamic>? map) {
     final data = map ?? {};
@@ -27,6 +31,8 @@ class Conversation {
       lastMessage: readString(data, 'lastMessage'),
       lastMessageAt: readDateTime(data, 'lastMessageAt'),
       relatedRequestId: readString(data, 'relatedRequestId'),
+      lastSenderId: readString(data, 'lastSenderId'),
+      unreadBy: readStringList(data, 'unreadBy'),
     );
   }
 
@@ -38,6 +44,8 @@ class Conversation {
       'lastMessage': lastMessage,
       'lastMessageAt': dateTimeToTimestamp(lastMessageAt),
       'relatedRequestId': relatedRequestId,
+      'lastSenderId': lastSenderId,
+      'unreadBy': unreadBy,
     };
   }
 
@@ -48,6 +56,8 @@ class Conversation {
     String? lastMessage,
     DateTime? lastMessageAt,
     String? relatedRequestId,
+    String? lastSenderId,
+    List<String>? unreadBy,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -56,6 +66,8 @@ class Conversation {
       lastMessage: lastMessage ?? this.lastMessage,
       lastMessageAt: lastMessageAt ?? this.lastMessageAt,
       relatedRequestId: relatedRequestId ?? this.relatedRequestId,
+      lastSenderId: lastSenderId ?? this.lastSenderId,
+      unreadBy: unreadBy ?? this.unreadBy,
     );
   }
 }
