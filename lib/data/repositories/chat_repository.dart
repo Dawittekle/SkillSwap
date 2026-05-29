@@ -24,31 +24,17 @@ class ChatRepository {
     try {
       final conversationId = conversationIdForUsers(currentUserId, otherUserId);
       final document = _conversations.doc(conversationId);
-      final existingConversation = await document.get();
+      final conversationData = {
+        'id': conversationId,
+        'participants': _sortedParticipants(currentUserId, otherUserId),
+        'participantNames': participantNames,
+        if (relatedRequestId != null && relatedRequestId.isNotEmpty)
+          'relatedRequestId': relatedRequestId,
+      };
 
-      if (existingConversation.exists) {
-        await document.set({
-          'participants': _sortedParticipants(currentUserId, otherUserId),
-          'participantNames': participantNames,
-          if (relatedRequestId != null && relatedRequestId.isNotEmpty)
-            'relatedRequestId': relatedRequestId,
-        }, SetOptions(merge: true));
-
-        return conversationId;
-      }
-
-      final conversation = Conversation(
-        id: conversationId,
-        participants: _sortedParticipants(currentUserId, otherUserId),
-        participantNames: participantNames,
-        lastMessage: '',
-        lastMessageAt: DateTime.now(),
-        relatedRequestId: relatedRequestId ?? '',
-        lastSenderId: '',
-        unreadBy: const [],
-      );
-
-      await document.set(conversation.toMap());
+      // Do not read before writing. A new conversation may not pass Firestore
+      // read rules until its participants array exists.
+      await document.set(conversationData, SetOptions(merge: true));
       return conversationId;
     } catch (error) {
       throw friendlyFirestoreException(error, 'Could not create conversation.');
