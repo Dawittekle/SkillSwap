@@ -36,18 +36,18 @@ SkillSwap solves this by creating a simple system for students to exchange skill
 
 ## Main Features
 
-- Email/password authentication.
-- Profile setup.
-- Offered and wanted skills.
-- Discover and search.
-- Match score.
-- Swap requests.
-- My Swaps tabs for Requests, Upcoming, and Completed.
-- Chat between students.
-- Reviews after completed swaps.
-- Loading, error, and empty states.
-- No internet handling.
-- Development demo data seeding.
+- **Email/password authentication:** Students can create an account, log in, reset their password, and securely access their own data.
+- **Profile setup:** New users complete their student profile with university, department, year, campus, and bio information.
+- **Offered and wanted skills:** Students can add skills they can teach and skills they want to learn.
+- **Discover and search:** Users can discover skills and students by searching skill names, categories, universities, or student names.
+- **Match score:** The app calculates a compatibility score based on what a student wants to learn and what they can offer in return.
+- **Swap requests:** Students can send skill exchange requests to other students and choose what they will offer back.
+- **My Swaps tabs:** Swap requests are organized into Requests, Upcoming, and Completed sections for easy tracking.
+- **Chat between students:** Students can message each other after connecting through a skill or swap request.
+- **Reviews after completed swaps:** Users can leave ratings and feedback after completing a skill exchange.
+- **Loading, error, and empty states:** The app shows clear loading indicators, helpful error messages, and meaningful empty screens.
+- **No internet handling:** Network problems are handled with friendly messages and retry options.
+- **Development demo data seeding:** Sample users and skills can be added for testing and presentation purposes.
 
 ## Technology Stack
 
