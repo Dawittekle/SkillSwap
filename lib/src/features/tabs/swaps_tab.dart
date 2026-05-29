@@ -10,10 +10,16 @@ import 'package:skill_swap/src/core/widgets/app_chip.dart';
 import 'package:skill_swap/src/features/auth/auth_helpers.dart';
 
 class SwapsTab extends StatelessWidget {
-  const SwapsTab({super.key, this.authService, this.swapRepository});
+  const SwapsTab({
+    super.key,
+    this.authService,
+    this.swapRepository,
+    this.onSelectTab,
+  });
 
   final AuthService? authService;
   final SwapRepository? swapRepository;
+  final ValueChanged<int>? onSelectTab;
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +66,7 @@ class SwapsTab extends StatelessWidget {
               currentUserId: currentUser.uid,
               requests: allRequests,
               swapRepository: swaps,
+              onSelectTab: onSelectTab,
             );
           },
         );
@@ -73,11 +80,13 @@ class _SwapsContent extends StatelessWidget {
     required this.currentUserId,
     required this.requests,
     required this.swapRepository,
+    required this.onSelectTab,
   });
 
   final String currentUserId;
   final List<SwapRequest> requests;
   final SwapRepository swapRepository;
+  final ValueChanged<int>? onSelectTab;
 
   @override
   Widget build(BuildContext context) {
@@ -115,10 +124,16 @@ class _SwapsContent extends StatelessWidget {
                   ),
                   const SizedBox(height: 18),
                   AppButton(
-                    label: 'New Swap Request',
+                    label: 'Find Swap Partner',
                     icon: Icons.add,
-                    onPressed: () =>
-                        Navigator.of(context).pushNamed(AppRoutes.requestSwap),
+                    onPressed: () {
+                      if (onSelectTab != null) {
+                        onSelectTab!(1);
+                        return;
+                      }
+
+                      Navigator.of(context).pushNamed(AppRoutes.discover);
+                    },
                   ),
                   const SizedBox(height: 18),
                   const TabBar(
@@ -138,19 +153,21 @@ class _SwapsContent extends StatelessWidget {
                     requests: pending,
                     currentUserId: currentUserId,
                     swapRepository: swapRepository,
-                    emptyMessage: 'No pending swap requests yet.',
+                    emptyMessage:
+                        'No pending requests yet. Find a swap partner to start.',
                   ),
                   _SwapList(
                     requests: upcoming,
                     currentUserId: currentUserId,
                     swapRepository: swapRepository,
-                    emptyMessage: 'Accepted swaps will appear here.',
+                    emptyMessage:
+                        'No upcoming sessions yet. Accepted swaps will appear here after you schedule a time.',
                   ),
                   _SwapList(
                     requests: completed,
                     currentUserId: currentUserId,
                     swapRepository: swapRepository,
-                    emptyMessage: 'Completed swaps will appear here.',
+                    emptyMessage: 'No completed swaps yet.',
                   ),
                 ],
               ),

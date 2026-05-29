@@ -12,6 +12,8 @@ class SkillCard extends StatelessWidget {
     required this.owner,
     required this.onConnect,
     required this.onViewDetails,
+    this.matchLabel,
+    this.matchScore,
     super.key,
   });
 
@@ -19,6 +21,8 @@ class SkillCard extends StatelessWidget {
   final Student owner;
   final VoidCallback onConnect;
   final VoidCallback onViewDetails;
+  final String? matchLabel;
+  final int? matchScore;
 
   @override
   Widget build(BuildContext context) {
@@ -101,6 +105,12 @@ class SkillCard extends StatelessWidget {
                 color: AppColors.primaryGreen,
               ),
               StatusChip(label: skill.duration, color: AppColors.textGray),
+              if (matchLabel != null && matchScore != null)
+                StatusChip(
+                  label: '$matchScore% $matchLabel',
+                  color: AppColors.accentGold,
+                  icon: Icons.auto_awesome,
+                ),
             ],
           ),
           const SizedBox(height: 14),

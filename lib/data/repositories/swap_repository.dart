@@ -28,6 +28,34 @@ class SwapRepository {
     }
   }
 
+  Future<SwapRequest?> findActiveRequest({
+    required String fromUserId,
+    required String toUserId,
+    required String wantedSkillId,
+  }) async {
+    try {
+      final snapshot = await _swapRequests
+          .where('fromUserId', isEqualTo: fromUserId)
+          .where('toUserId', isEqualTo: toUserId)
+          .where('wantedSkillId', isEqualTo: wantedSkillId)
+          .get();
+
+      final requests = _requestsFromSnapshot(snapshot);
+      for (final request in requests) {
+        if (request.status == 'pending' || request.status == 'accepted') {
+          return request;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      throw friendlyFirestoreException(
+        error,
+        'Could not check existing swap requests.',
+      );
+    }
+  }
+
   Stream<List<SwapRequest>> watchIncomingRequests(String uid) {
     return _swapRequests
         .where('toUserId', isEqualTo: uid)

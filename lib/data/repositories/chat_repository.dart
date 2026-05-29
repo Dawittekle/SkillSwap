@@ -20,20 +20,24 @@ class ChatRepository {
     String? relatedRequestId,
   }) async {
     try {
-      final existingConversation = await _findExistingConversation(
-        currentUserId,
-        otherUserId,
-        relatedRequestId,
-      );
+      final conversationId = conversationIdForUsers(currentUserId, otherUserId);
+      final document = _conversations.doc(conversationId);
+      final existingConversation = await document.get();
 
-      if (existingConversation != null) {
-        return existingConversation.id;
+      if (existingConversation.exists) {
+        await document.set({
+          'participants': _sortedParticipants(currentUserId, otherUserId),
+          'participantNames': participantNames,
+          if (relatedRequestId != null && relatedRequestId.isNotEmpty)
+            'relatedRequestId': relatedRequestId,
+        }, SetOptions(merge: true));
+
+        return conversationId;
       }
 
-      final document = _conversations.doc();
       final conversation = Conversation(
-        id: document.id,
-        participants: [currentUserId, otherUserId],
+        id: conversationId,
+        participants: _sortedParticipants(currentUserId, otherUserId),
         participantNames: participantNames,
         lastMessage: '',
         lastMessageAt: DateTime.now(),
@@ -43,7 +47,7 @@ class ChatRepository {
       );
 
       await document.set(conversation.toMap());
-      return document.id;
+      return conversationId;
     } catch (error) {
       throw friendlyFirestoreException(error, 'Could not create conversation.');
     }
@@ -144,33 +148,6 @@ class ChatRepository {
     return _conversations.doc(conversationId).collection('messages');
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>?> _findExistingConversation(
-    String currentUserId,
-    String otherUserId,
-    String? relatedRequestId,
-  ) async {
-    final snapshot = await _conversations
-        .where('participants', arrayContains: currentUserId)
-        .get();
-
-    for (final document in snapshot.docs) {
-      final conversation = Conversation.fromMap(
-        dataWithDocumentId(document, 'id'),
-      );
-      final hasOtherUser = conversation.participants.contains(otherUserId);
-      final matchesRequest =
-          relatedRequestId == null ||
-          relatedRequestId.isEmpty ||
-          conversation.relatedRequestId == relatedRequestId;
-
-      if (hasOtherUser && matchesRequest) {
-        return document;
-      }
-    }
-
-    return null;
-  }
-
   List<Conversation> _conversationsFromSnapshot(
     QuerySnapshot<Map<String, dynamic>> snapshot,
   ) {
@@ -186,4 +163,12 @@ class ChatRepository {
       return ChatMessage.fromMap(dataWithDocumentId(document, 'id'));
     }).toList();
   }
+}
+
+String conversationIdForUsers(String firstUserId, String secondUserId) {
+  return _sortedParticipants(firstUserId, secondUserId).join('_');
+}
+
+List<String> _sortedParticipants(String firstUserId, String secondUserId) {
+  return [firstUserId, secondUserId]..sort();
 }

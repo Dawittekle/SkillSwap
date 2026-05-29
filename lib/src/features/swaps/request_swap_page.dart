@@ -77,6 +77,31 @@ class _RequestSwapPageState extends State<RequestSwapPage> {
 
     setState(() => _isSending = true);
     try {
+      final existingRequest = await _swapRepository.findActiveRequest(
+        fromUserId: currentUser.uid,
+        toUserId: selectedSkill.ownerId,
+        wantedSkillId: selectedSkill.id,
+      );
+
+      if (existingRequest != null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'You already have an active request with this student.',
+            ),
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () => Navigator.of(context).pushReplacementNamed(
+                AppRoutes.swapDetails,
+                arguments: existingRequest,
+              ),
+            ),
+          ),
+        );
+        return;
+      }
+
       final requestId = await _swapRepository.createSwapRequest(
         SwapRequest(
           id: '',

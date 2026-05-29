@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:skill_swap/data/models/app_user.dart';
 import 'package:skill_swap/data/models/skill.dart' as firestore_skill;
 import 'package:skill_swap/data/repositories/skill_repository.dart';
+import 'package:skill_swap/data/repositories/user_repository.dart';
 import 'package:skill_swap/data/services/auth_service.dart';
 import 'package:skill_swap/src/app.dart';
 import 'package:skill_swap/src/core/theme/app_colors.dart';
@@ -12,10 +14,16 @@ import 'package:skill_swap/src/data/mock/mock_skills.dart';
 import 'package:skill_swap/src/features/skills/skill_ui_adapters.dart';
 
 class DiscoverTab extends StatefulWidget {
-  const DiscoverTab({super.key, this.authService, this.skillRepository});
+  const DiscoverTab({
+    super.key,
+    this.authService,
+    this.skillRepository,
+    this.userRepository,
+  });
 
   final AuthService? authService;
   final SkillRepository? skillRepository;
+  final UserRepository? userRepository;
 
   @override
   State<DiscoverTab> createState() => _DiscoverTabState();
@@ -29,6 +37,8 @@ class _DiscoverTabState extends State<DiscoverTab> {
   AuthService get _authService => widget.authService ?? AuthService();
   SkillRepository get _skillRepository =>
       widget.skillRepository ?? SkillRepository();
+  UserRepository get _userRepository =>
+      widget.userRepository ?? UserRepository();
 
   List<String> _categoriesFor(List<firestore_skill.Skill> skills) => [
     'All',
@@ -42,6 +52,7 @@ class _DiscoverTabState extends State<DiscoverTab> {
 
   List<firestore_skill.Skill> _filteredSkills(
     List<firestore_skill.Skill> skills,
+    Map<String, AppUser> usersById,
   ) {
     final normalizedQuery = _query.trim().toLowerCase();
 
@@ -57,10 +68,29 @@ class _DiscoverTabState extends State<DiscoverTab> {
           skill.level.toLowerCase().contains(normalizedQuery) ||
           skill.exchangeFor.toLowerCase().contains(normalizedQuery) ||
           skill.ownerName.toLowerCase().contains(normalizedQuery) ||
-          skill.university.toLowerCase().contains(normalizedQuery);
+          skill.university.toLowerCase().contains(normalizedQuery) ||
+          (usersById[skill.ownerId]?.department.toLowerCase().contains(
+                normalizedQuery,
+              ) ??
+              false);
 
       return matchesCategory && matchesMode && matchesQuery;
     }).toList();
+  }
+
+  Future<Map<String, AppUser>> _loadUsersForSkills(
+    String currentUserId,
+    List<firestore_skill.Skill> skills,
+  ) async {
+    final userIds = {currentUserId, ...skills.map((skill) => skill.ownerId)};
+    final usersById = <String, AppUser>{};
+
+    for (final userId in userIds) {
+      final user = await _userRepository.getUser(userId);
+      if (user != null) usersById[userId] = user;
+    }
+
+    return usersById;
   }
 
   @override
@@ -83,7 +113,6 @@ class _DiscoverTabState extends State<DiscoverTab> {
             ),
             builder: (context, snapshot) {
               final allSkills = snapshot.data ?? [];
-              final skills = _filteredSkills(allSkills);
 
               return ListView(
                 padding: EdgeInsets.fromLTRB(
@@ -123,36 +152,85 @@ class _DiscoverTabState extends State<DiscoverTab> {
                             },
                           ),
                           const SizedBox(height: 20),
-                          _DiscoverSummary(
-                            resultCount: skills.length,
-                            selectedCategory: _selectedCategory,
-                          ),
-                          const SizedBox(height: 16),
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting)
-                            const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(24),
-                                child: CircularProgressIndicator(
-                                  color: AppColors.primaryGreen,
+                          StreamBuilder<List<firestore_skill.Skill>>(
+                            stream: _skillRepository.watchCurrentUserSkills(
+                              currentUser.uid,
+                            ),
+                            builder: (context, mySkillsSnapshot) {
+                              return FutureBuilder<Map<String, AppUser>>(
+                                future: _loadUsersForSkills(
+                                  currentUser.uid,
+                                  allSkills,
                                 ),
-                              ),
-                            )
-                          else if (snapshot.hasError)
-                            _DiscoverErrorState(message: snapshot.error)
-                          else if (allSkills.isEmpty)
-                            const _EmptySkillsState(
-                              title: 'No student skills yet',
-                              message:
-                                  'Discover needs active offered skills from other students.',
-                            )
-                          else if (skills.isEmpty)
-                            const _EmptySkillsState(
-                              title: 'No skills found',
-                              message: 'Try another search term or category.',
-                            )
-                          else
-                            _SkillResultsGrid(skills: skills, isWide: isWide),
+                                builder: (context, usersSnapshot) {
+                                  final usersById = usersSnapshot.data ?? {};
+                                  final skills = _filteredSkills(
+                                    allSkills,
+                                    usersById,
+                                  );
+
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      _DiscoverSummary(
+                                        resultCount: skills.length,
+                                        selectedCategory: _selectedCategory,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      if (snapshot.connectionState ==
+                                              ConnectionState.waiting ||
+                                          mySkillsSnapshot.connectionState ==
+                                              ConnectionState.waiting ||
+                                          usersSnapshot.connectionState ==
+                                              ConnectionState.waiting)
+                                        const Center(
+                                          child: Padding(
+                                            padding: EdgeInsets.all(24),
+                                            child: CircularProgressIndicator(
+                                              color: AppColors.primaryGreen,
+                                            ),
+                                          ),
+                                        )
+                                      else if (snapshot.hasError)
+                                        _DiscoverErrorState(
+                                          message: snapshot.error,
+                                        )
+                                      else if (mySkillsSnapshot.hasError)
+                                        _DiscoverErrorState(
+                                          message: mySkillsSnapshot.error,
+                                        )
+                                      else if (usersSnapshot.hasError)
+                                        _DiscoverErrorState(
+                                          message: usersSnapshot.error,
+                                        )
+                                      else if (allSkills.isEmpty)
+                                        const _EmptySkillsState(
+                                          title: 'No student skills yet',
+                                          message:
+                                              'Discover needs active offered skills from other students.',
+                                        )
+                                      else if (skills.isEmpty)
+                                        const _EmptySkillsState(
+                                          title: 'No skills found',
+                                          message:
+                                              'Try another search term, student name, department, or category.',
+                                        )
+                                      else
+                                        _SkillResultsGrid(
+                                          skills: skills,
+                                          isWide: isWide,
+                                          currentUser:
+                                              usersById[currentUser.uid],
+                                          usersById: usersById,
+                                          mySkills: mySkillsSnapshot.data ?? [],
+                                        ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -310,10 +388,19 @@ class _DiscoverSummary extends StatelessWidget {
 }
 
 class _SkillResultsGrid extends StatelessWidget {
-  const _SkillResultsGrid({required this.skills, required this.isWide});
+  const _SkillResultsGrid({
+    required this.skills,
+    required this.isWide,
+    required this.currentUser,
+    required this.usersById,
+    required this.mySkills,
+  });
 
   final List<firestore_skill.Skill> skills;
   final bool isWide;
+  final AppUser? currentUser;
+  final Map<String, AppUser> usersById;
+  final List<firestore_skill.Skill> mySkills;
 
   @override
   Widget build(BuildContext context) {
@@ -321,11 +408,24 @@ class _SkillResultsGrid extends StatelessWidget {
       return Column(
         children: [
           for (final skill in skills) ...[
-            SkillCard(
-              skill: uiSkillFromFirestore(skill),
-              owner: studentFromSkillOwner(skill),
-              onConnect: () => _openRequestSwap(context, skill),
-              onViewDetails: () => _openDetails(context, skill),
+            Builder(
+              builder: (context) {
+                final owner = usersById[skill.ownerId];
+                final match = _matchForSkill(
+                  skill,
+                  owner,
+                  currentUser,
+                  mySkills,
+                );
+                return SkillCard(
+                  skill: uiSkillFromFirestore(skill),
+                  owner: studentFromSkillOwner(skill, user: owner),
+                  matchScore: match.score,
+                  matchLabel: match.label,
+                  onConnect: () => _openRequestSwap(context, skill),
+                  onViewDetails: () => _openDetails(context, skill),
+                );
+              },
             ),
             const SizedBox(height: 14),
           ],
@@ -345,10 +445,14 @@ class _SkillResultsGrid extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         final skill = skills[index];
+        final owner = usersById[skill.ownerId];
+        final match = _matchForSkill(skill, owner, currentUser, mySkills);
 
         return SkillCard(
           skill: uiSkillFromFirestore(skill),
-          owner: studentFromSkillOwner(skill),
+          owner: studentFromSkillOwner(skill, user: owner),
+          matchScore: match.score,
+          matchLabel: match.label,
           onConnect: () => _openRequestSwap(context, skill),
           onViewDetails: () => _openDetails(context, skill),
         );
@@ -370,6 +474,70 @@ class _SkillResultsGrid extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MatchScore {
+  const _MatchScore({required this.score, required this.label});
+
+  final int score;
+  final String label;
+}
+
+_MatchScore _matchForSkill(
+  firestore_skill.Skill skill,
+  AppUser? owner,
+  AppUser? currentUser,
+  List<firestore_skill.Skill> mySkills,
+) {
+  var score = 40;
+  final myWantedSkills = mySkills.where((skill) => skill.type == 'wanted');
+  final myOfferedSkills = mySkills.where((skill) => skill.type == 'offered');
+  final offeredSkillMatchesWanted = myWantedSkills.any((wantedSkill) {
+    return _textsMatch(skill.title, wantedSkill.title) ||
+        _textsMatch(skill.category, wantedSkill.category);
+  });
+  final exchangeMatchesMyOffer = myOfferedSkills.any((offeredSkill) {
+    return _textsMatch(skill.exchangeFor, offeredSkill.title) ||
+        _textsMatch(skill.exchangeFor, offeredSkill.category);
+  });
+  final sameUniversity =
+      currentUser != null &&
+      currentUser.university.isNotEmpty &&
+      currentUser.university.toLowerCase() ==
+          (owner?.university.isNotEmpty == true
+                  ? owner!.university
+                  : skill.university)
+              .toLowerCase();
+  final sameCampus =
+      currentUser != null &&
+      owner != null &&
+      currentUser.campus.isNotEmpty &&
+      currentUser.campus.toLowerCase() == owner.campus.toLowerCase();
+
+  if (offeredSkillMatchesWanted) score += 30;
+  if (exchangeMatchesMyOffer) score += 30;
+  if (sameUniversity || sameCampus) score += 10;
+  if ((owner?.rating ?? 0) >= 4.5) score += 5;
+
+  final cappedScore = score > 100 ? 100 : score;
+  return _MatchScore(score: cappedScore, label: _matchLabel(cappedScore));
+}
+
+bool _textsMatch(String first, String second) {
+  final normalizedFirst = first.trim().toLowerCase();
+  final normalizedSecond = second.trim().toLowerCase();
+  if (normalizedFirst.isEmpty || normalizedSecond.isEmpty) return false;
+
+  return normalizedFirst.contains(normalizedSecond) ||
+      normalizedSecond.contains(normalizedFirst);
+}
+
+String _matchLabel(int score) {
+  if (score >= 90) return 'Great Match';
+  if (score >= 70) return 'Good Match';
+  if (score >= 50) return 'Possible Match';
+
+  return 'Low Match';
 }
 
 class _EmptySkillsState extends StatelessWidget {

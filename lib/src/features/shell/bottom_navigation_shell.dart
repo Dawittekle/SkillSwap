@@ -31,7 +31,7 @@ class _BottomNavigationShellState extends State<BottomNavigationShell> {
     final tabs = [
       HomeTab(onSelectTab: _selectTab),
       const DiscoverTab(),
-      const SwapsTab(),
+      SwapsTab(onSelectTab: _selectTab),
       const MessagesTab(),
       const ProfileTab(),
     ];
