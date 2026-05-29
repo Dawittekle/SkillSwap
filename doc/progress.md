@@ -305,6 +305,33 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-29 Teaching-Friendly Project Structure Refactor
+
+### Completed
+- Moved the app from `lib/src/` into clear top-level folders:
+  - `core`
+  - `data`
+  - `demo`
+  - `features`
+  - `routing`
+- Moved route names and route arguments into `routing/app_routes.dart`.
+- Moved route creation into `routing/app_router.dart`.
+- Renamed the main tab page classes to beginner-friendly page names:
+  - `HomePage`
+  - `DiscoverPage`
+  - `MySwapsPage`
+  - `MessagesPage`
+  - `MyProfilePage`
+  - `SignupPage`
+- Added shared constants, text styles, date formatting, snackbar, loading, error, and empty-state helpers.
+- Added short purpose comments to key service, repository, and model files.
+- Updated the README with the finished project explanation, run commands, Firebase collections, and two-user testing guide.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
