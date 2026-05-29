@@ -233,6 +233,27 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-29 Product Logic And UX Polish
+
+### Completed
+- Changed My Swaps primary action to "Find Swap Partner" and routed it to Discover.
+- Improved Discover search to match skill fields, owner name, university, and owner department.
+- Added demo-friendly Discover match score labels:
+  - Great Match
+  - Good Match
+  - Possible Match
+  - Low Match
+- Prevented duplicate active swap requests for the same requester, student, and wanted skill.
+- Added a friendly duplicate request message with a View action for the existing request.
+- Changed chat creation to use deterministic conversation ids based on sorted user ids.
+- Kept one conversation per pair of users even when opened from different entry points.
+- Updated My Swaps empty messages for Requests, Upcoming, and Completed tabs.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
