@@ -197,6 +197,26 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-29 Home Firestore Alignment
+
+### Completed
+- Replaced mock-only Home page data with signed-in Firestore profile data.
+- Connected Home metrics to live swap request data:
+  - active accepted swaps
+  - completed sessions
+  - potential matches
+- Connected best matches to active offered skills from other users.
+- Wired Home Request Swap buttons to pass the selected Firestore skill and teacher.
+- Wired View Matches, See All, search, and filter actions to the Discover screen.
+- Wired the notification bell to the Firestore-backed Messages screen.
+- Added a simple Session Details screen for accepted/completed swap requests.
+- Updated the Home widget test to use a Firebase-free preview mode.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
