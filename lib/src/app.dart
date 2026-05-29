@@ -137,8 +137,12 @@ class SkillSwapApp extends StatelessWidget {
     }
 
     if (settings.name == AppRoutes.discover) {
+      final initialQuery = settings.arguments is String
+          ? settings.arguments! as String
+          : '';
+
       return MaterialPageRoute(
-        builder: (_) => const Scaffold(body: DiscoverTab()),
+        builder: (_) => Scaffold(body: DiscoverTab(initialQuery: initialQuery)),
         settings: settings,
       );
     }

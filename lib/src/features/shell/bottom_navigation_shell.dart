@@ -20,17 +20,28 @@ class BottomNavigationShell extends StatefulWidget {
 
 class _BottomNavigationShellState extends State<BottomNavigationShell> {
   late int _selectedIndex = widget.initialIndex;
+  String _discoverQuery = '';
 
   void _selectTab(int index) {
     setState(() => _selectedIndex = index);
+  }
+
+  void _openDiscoverWithQuery(String query) {
+    setState(() {
+      _discoverQuery = query;
+      _selectedIndex = 1;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final currentUser = AuthService().currentUser;
     final tabs = [
-      HomeTab(onSelectTab: _selectTab),
-      const DiscoverTab(),
+      HomeTab(
+        onSelectTab: _selectTab,
+        onDiscoverSearch: _openDiscoverWithQuery,
+      ),
+      DiscoverTab(initialQuery: _discoverQuery),
       SwapsTab(onSelectTab: _selectTab),
       const MessagesTab(),
       const ProfileTab(),

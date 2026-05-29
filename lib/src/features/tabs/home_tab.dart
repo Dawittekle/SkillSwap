@@ -27,6 +27,7 @@ class HomeTab extends StatelessWidget {
     this.chatRepository,
     this.previewData = false,
     this.onSelectTab,
+    this.onDiscoverSearch,
   });
 
   final AuthService? authService;
@@ -37,6 +38,7 @@ class HomeTab extends StatelessWidget {
   final ChatRepository? chatRepository;
   final bool previewData;
   final ValueChanged<int>? onSelectTab;
+  final ValueChanged<String>? onDiscoverSearch;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +82,7 @@ class HomeTab extends StatelessWidget {
           reviewRepository: reviewRepository ?? ReviewRepository(),
           chatRepository: chatRepository ?? ChatRepository(),
           onSelectTab: onSelectTab,
+          onDiscoverSearch: onDiscoverSearch,
         );
       },
     );
@@ -94,6 +97,7 @@ class _HomeDataStreams extends StatelessWidget {
     required this.reviewRepository,
     required this.chatRepository,
     required this.onSelectTab,
+    required this.onDiscoverSearch,
   });
 
   final AppUser user;
@@ -102,6 +106,7 @@ class _HomeDataStreams extends StatelessWidget {
   final ReviewRepository reviewRepository;
   final ChatRepository chatRepository;
   final ValueChanged<int>? onSelectTab;
+  final ValueChanged<String>? onDiscoverSearch;
 
   @override
   Widget build(BuildContext context) {
@@ -156,6 +161,7 @@ class _HomeDataStreams extends StatelessWidget {
                             return _HomeContent(
                               data: homeData,
                               onSelectTab: onSelectTab,
+                              onDiscoverSearch: onDiscoverSearch,
                             );
                           },
                         );
@@ -173,18 +179,28 @@ class _HomeDataStreams extends StatelessWidget {
 }
 
 class _HomeContent extends StatelessWidget {
-  const _HomeContent({required this.data, this.onSelectTab});
+  const _HomeContent({
+    required this.data,
+    this.onSelectTab,
+    this.onDiscoverSearch,
+  });
 
   final _HomeData data;
   final ValueChanged<int>? onSelectTab;
+  final ValueChanged<String>? onDiscoverSearch;
 
-  void _openDiscover(BuildContext context) {
+  void _openDiscover(BuildContext context, {String query = ''}) {
+    if (onDiscoverSearch != null) {
+      onDiscoverSearch!(query);
+      return;
+    }
+
     if (onSelectTab != null) {
       onSelectTab!(1);
       return;
     }
 
-    Navigator.of(context).pushNamed(AppRoutes.discover);
+    Navigator.of(context).pushNamed(AppRoutes.discover, arguments: query);
   }
 
   void _openMessages(BuildContext context) {
@@ -225,7 +241,9 @@ class _HomeContent extends StatelessWidget {
                       _Greeting(summary: data.summary),
                       const SizedBox(height: 16),
                       _SearchField(
-                        onOpenDiscover: () => _openDiscover(context),
+                        onOpenDiscover: (query) {
+                          _openDiscover(context, query: query);
+                        },
                       ),
                       const SizedBox(height: 24),
                       _MatchSummary(
@@ -233,7 +251,12 @@ class _HomeContent extends StatelessWidget {
                         onOpenDiscover: () => _openDiscover(context),
                       ),
                       const SizedBox(height: 24),
-                      _CategoryRail(categories: data.categories),
+                      _CategoryRail(
+                        categories: data.categories,
+                        onOpenDiscover: (category) {
+                          _openDiscover(context, query: category);
+                        },
+                      ),
                       const SizedBox(height: 28),
                       _SectionHeader(
                         title: 'Best matches for you',
@@ -371,18 +394,18 @@ class _Greeting extends StatelessWidget {
 class _SearchField extends StatelessWidget {
   const _SearchField({required this.onOpenDiscover});
 
-  final VoidCallback onOpenDiscover;
+  final ValueChanged<String> onOpenDiscover;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       textInputAction: TextInputAction.search,
-      onSubmitted: (_) => onOpenDiscover(),
+      onSubmitted: onOpenDiscover,
       decoration: InputDecoration(
         prefixIcon: const Icon(Icons.search),
         hintText: 'Search skills or students',
         suffixIcon: IconButton(
-          onPressed: onOpenDiscover,
+          onPressed: () => onOpenDiscover(''),
           icon: const Icon(Icons.tune),
           tooltip: 'Filters',
         ),
@@ -468,9 +491,10 @@ class _MatchSummary extends StatelessWidget {
 }
 
 class _CategoryRail extends StatelessWidget {
-  const _CategoryRail({required this.categories});
+  const _CategoryRail({required this.categories, required this.onOpenDiscover});
 
   final List<String> categories;
+  final ValueChanged<String> onOpenDiscover;
 
   @override
   Widget build(BuildContext context) {
@@ -483,9 +507,10 @@ class _CategoryRail extends StatelessWidget {
       child: Row(
         children: [
           for (final category in visibleCategories) ...[
-            SkillChip(
+            CategoryChip(
               label: category,
               selected: category == visibleCategories.first,
+              onTap: () => onOpenDiscover(category),
             ),
             const SizedBox(width: 10),
           ],

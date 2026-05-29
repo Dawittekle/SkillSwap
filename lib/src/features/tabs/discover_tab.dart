@@ -19,17 +19,20 @@ class DiscoverTab extends StatefulWidget {
     this.authService,
     this.skillRepository,
     this.userRepository,
+    this.initialQuery = '',
   });
 
   final AuthService? authService;
   final SkillRepository? skillRepository;
   final UserRepository? userRepository;
+  final String initialQuery;
 
   @override
   State<DiscoverTab> createState() => _DiscoverTabState();
 }
 
 class _DiscoverTabState extends State<DiscoverTab> {
+  late final TextEditingController _searchController;
   String _selectedCategory = 'All';
   String _query = '';
   Set<String> _selectedMode = const {'offered'};
@@ -39,6 +42,29 @@ class _DiscoverTabState extends State<DiscoverTab> {
       widget.skillRepository ?? SkillRepository();
   UserRepository get _userRepository =>
       widget.userRepository ?? UserRepository();
+
+  @override
+  void initState() {
+    super.initState();
+    _query = widget.initialQuery;
+    _searchController = TextEditingController(text: widget.initialQuery);
+  }
+
+  @override
+  void didUpdateWidget(covariant DiscoverTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialQuery != oldWidget.initialQuery &&
+        widget.initialQuery != _query) {
+      setState(() => _query = widget.initialQuery);
+      _searchController.text = widget.initialQuery;
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   List<String> _categoriesFor(List<firestore_skill.Skill> skills) => [
     'All',
@@ -131,6 +157,7 @@ class _DiscoverTabState extends State<DiscoverTab> {
                           const _DiscoverHeader(),
                           const SizedBox(height: 16),
                           SkillSearchBar(
+                            controller: _searchController,
                             hintText: 'Search for Python, Guitar, French...',
                             onChanged: (value) =>
                                 setState(() => _query = value),
