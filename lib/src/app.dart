@@ -16,6 +16,9 @@ import 'package:skill_swap/src/features/skills/skill_form_page.dart';
 import 'package:skill_swap/src/features/skills/skills_setup_page.dart';
 import 'package:skill_swap/src/features/swaps/request_sent_page.dart';
 import 'package:skill_swap/src/features/swaps/request_swap_page.dart';
+import 'package:skill_swap/src/features/swaps/swap_request_detail_page.dart';
+import 'package:skill_swap/src/features/tabs/discover_tab.dart';
+import 'package:skill_swap/src/features/tabs/messages_tab.dart';
 
 class SkillSwapApp extends StatelessWidget {
   const SkillSwapApp({super.key});
@@ -133,6 +136,31 @@ class SkillSwapApp extends StatelessWidget {
       );
     }
 
+    if (settings.name == AppRoutes.discover) {
+      return MaterialPageRoute(
+        builder: (_) => const Scaffold(body: DiscoverTab()),
+        settings: settings,
+      );
+    }
+
+    if (settings.name == AppRoutes.messages) {
+      return MaterialPageRoute(
+        builder: (_) => const Scaffold(body: MessagesTab()),
+        settings: settings,
+      );
+    }
+
+    if (settings.name == AppRoutes.swapDetails) {
+      final request = settings.arguments is SwapRequest
+          ? settings.arguments! as SwapRequest
+          : null;
+
+      return MaterialPageRoute(
+        builder: (_) => SwapRequestDetailPage(request: request),
+        settings: settings,
+      );
+    }
+
     if (settings.name == AppRoutes.reviewSession) {
       final arguments = settings.arguments is ReviewSessionArguments
           ? settings.arguments! as ReviewSessionArguments
@@ -195,7 +223,10 @@ class AppRoutes {
   static const editSkill = '/skills/edit';
   static const requestSwap = '/swaps/request';
   static const requestSent = '/swaps/request-sent';
+  static const swapDetails = '/swaps/details';
   static const skillDetails = '/skills/details';
+  static const discover = '/discover';
+  static const messages = '/messages';
   static const chat = '/chat';
   static const reviewSession = '/sessions/review';
 }

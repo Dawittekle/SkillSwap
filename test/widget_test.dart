@@ -10,12 +10,12 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: const Scaffold(body: HomeTab()),
+        home: const Scaffold(body: HomeTab(previewData: true)),
       ),
     );
 
     expect(find.text('SkillSwap'), findsOneWidget);
     expect(find.text('Best matches for you'), findsOneWidget);
-    expect(find.text('Guitar Lesson with Abel'), findsOneWidget);
+    expect(find.text('Request Swap'), findsOneWidget);
   });
 }

@@ -1,15 +1,173 @@
 import 'package:flutter/material.dart';
+import 'package:skill_swap/data/models/app_user.dart';
+import 'package:skill_swap/data/models/conversation.dart';
+import 'package:skill_swap/data/models/review.dart';
+import 'package:skill_swap/data/models/skill.dart' as firestore_skill;
+import 'package:skill_swap/data/models/swap_request.dart';
+import 'package:skill_swap/data/repositories/chat_repository.dart';
+import 'package:skill_swap/data/repositories/review_repository.dart';
+import 'package:skill_swap/data/repositories/skill_repository.dart';
+import 'package:skill_swap/data/repositories/swap_repository.dart';
+import 'package:skill_swap/data/repositories/user_repository.dart';
+import 'package:skill_swap/data/services/auth_service.dart';
 import 'package:skill_swap/src/app.dart';
 import 'package:skill_swap/src/core/theme/app_colors.dart';
 import 'package:skill_swap/src/core/widgets/app_button.dart';
 import 'package:skill_swap/src/core/widgets/app_card.dart';
 import 'package:skill_swap/src/core/widgets/app_chip.dart';
-import 'package:skill_swap/src/data/mock/mock_home.dart';
-import 'package:skill_swap/src/data/mock/mock_students.dart';
-import 'package:skill_swap/src/data/models/student.dart';
 
 class HomeTab extends StatelessWidget {
-  const HomeTab({super.key});
+  const HomeTab({
+    super.key,
+    this.authService,
+    this.userRepository,
+    this.skillRepository,
+    this.swapRepository,
+    this.reviewRepository,
+    this.chatRepository,
+    this.previewData = false,
+  });
+
+  final AuthService? authService;
+  final UserRepository? userRepository;
+  final SkillRepository? skillRepository;
+  final SwapRepository? swapRepository;
+  final ReviewRepository? reviewRepository;
+  final ChatRepository? chatRepository;
+  final bool previewData;
+
+  @override
+  Widget build(BuildContext context) {
+    if (previewData) {
+      return _HomeContent(data: _HomeData.preview());
+    }
+
+    final auth = authService ?? AuthService();
+    final users = userRepository ?? UserRepository();
+    final currentUser = auth.currentUser;
+
+    if (currentUser == null) {
+      return const SafeArea(
+        child: Center(child: Text('Please login to view your home page.')),
+      );
+    }
+
+    return StreamBuilder<AppUser?>(
+      stream: users.watchUser(currentUser.uid),
+      builder: (context, userSnapshot) {
+        if (userSnapshot.connectionState == ConnectionState.waiting &&
+            !userSnapshot.hasData) {
+          return const _HomeLoading();
+        }
+
+        if (userSnapshot.hasError) {
+          return _HomeMessage(message: userSnapshot.error.toString());
+        }
+
+        final user = userSnapshot.data;
+        if (user == null) {
+          return const _HomeMessage(
+            message: 'Complete your profile to see personalized matches.',
+          );
+        }
+
+        return _HomeDataStreams(
+          user: user,
+          skillRepository: skillRepository ?? SkillRepository(),
+          swapRepository: swapRepository ?? SwapRepository(),
+          reviewRepository: reviewRepository ?? ReviewRepository(),
+          chatRepository: chatRepository ?? ChatRepository(),
+        );
+      },
+    );
+  }
+}
+
+class _HomeDataStreams extends StatelessWidget {
+  const _HomeDataStreams({
+    required this.user,
+    required this.skillRepository,
+    required this.swapRepository,
+    required this.reviewRepository,
+    required this.chatRepository,
+  });
+
+  final AppUser user;
+  final SkillRepository skillRepository;
+  final SwapRepository swapRepository;
+  final ReviewRepository reviewRepository;
+  final ChatRepository chatRepository;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<firestore_skill.Skill>>(
+      stream: skillRepository.watchCurrentUserSkills(user.uid),
+      builder: (context, mySkillsSnapshot) {
+        return StreamBuilder<List<firestore_skill.Skill>>(
+          stream: skillRepository.watchOfferedSkillsExcludingUser(user.uid),
+          builder: (context, offeredSnapshot) {
+            return StreamBuilder<List<SwapRequest>>(
+              stream: swapRepository.watchIncomingRequests(user.uid),
+              builder: (context, incomingSnapshot) {
+                return StreamBuilder<List<SwapRequest>>(
+                  stream: swapRepository.watchOutgoingRequests(user.uid),
+                  builder: (context, outgoingSnapshot) {
+                    return StreamBuilder<List<Review>>(
+                      stream: reviewRepository.watchReviewsForUser(user.uid),
+                      builder: (context, reviewSnapshot) {
+                        return StreamBuilder<List<Conversation>>(
+                          stream: chatRepository.watchUserConversations(
+                            user.uid,
+                          ),
+                          builder: (context, conversationSnapshot) {
+                            final error =
+                                mySkillsSnapshot.error ??
+                                offeredSnapshot.error ??
+                                incomingSnapshot.error ??
+                                outgoingSnapshot.error ??
+                                reviewSnapshot.error ??
+                                conversationSnapshot.error;
+                            if (error != null) {
+                              return _HomeMessage(message: error.toString());
+                            }
+
+                            final mySkills = mySkillsSnapshot.data ?? [];
+                            final offeredSkills = offeredSnapshot.data ?? [];
+                            final incoming = incomingSnapshot.data ?? [];
+                            final outgoing = outgoingSnapshot.data ?? [];
+                            final reviews = reviewSnapshot.data ?? [];
+                            final conversations =
+                                conversationSnapshot.data ?? [];
+                            final allRequests = [...incoming, ...outgoing];
+                            final homeData = _HomeData.fromFirestore(
+                              user: user,
+                              mySkills: mySkills,
+                              offeredSkills: offeredSkills,
+                              requests: allRequests,
+                              reviews: reviews,
+                              conversations: conversations,
+                            );
+
+                            return _HomeContent(data: homeData);
+                          },
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _HomeContent extends StatelessWidget {
+  const _HomeContent({required this.data});
+
+  final _HomeData data;
 
   @override
   Widget build(BuildContext context) {
@@ -32,34 +190,44 @@ class HomeTab extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const _HomeHeader(),
+                      _HomeHeader(user: data.user),
                       const SizedBox(height: 26),
-                      _Greeting(summary: mockHomeSummary),
+                      _Greeting(summary: data.summary),
                       const SizedBox(height: 16),
                       const _SearchField(),
                       const SizedBox(height: 24),
-                      _MatchSummary(summary: mockHomeSummary),
+                      _MatchSummary(summary: data.summary),
                       const SizedBox(height: 24),
-                      const _CategoryRail(),
+                      _CategoryRail(categories: data.categories),
                       const SizedBox(height: 28),
                       _SectionHeader(
                         title: 'Best matches for you',
                         actionLabel: 'See all',
-                        onAction: () {},
+                        onAction: () =>
+                            Navigator.of(context).pushNamed(AppRoutes.discover),
                       ),
                       const SizedBox(height: 12),
                       _ResponsiveMatchGrid(
-                        students: mockStudents.take(isWide ? 3 : 2).toList(),
+                        matches: data.matches.take(isWide ? 3 : 2).toList(),
                         isWide: isWide,
                       ),
                       const SizedBox(height: 28),
                       if (isWide)
-                        const Row(
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(child: _UpcomingSessionCard()),
-                            SizedBox(width: 18),
-                            Expanded(child: _RecentActivityList()),
+                            Expanded(
+                              child: _UpcomingSessionCard(
+                                request: data.upcomingSession,
+                                currentUserId: data.user.uid,
+                              ),
+                            ),
+                            const SizedBox(width: 18),
+                            Expanded(
+                              child: _RecentActivityList(
+                                activities: data.activities,
+                              ),
+                            ),
                           ],
                         )
                       else ...[
@@ -68,9 +236,12 @@ class HomeTab extends StatelessWidget {
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         const SizedBox(height: 12),
-                        const _UpcomingSessionCard(),
+                        _UpcomingSessionCard(
+                          request: data.upcomingSession,
+                          currentUserId: data.user.uid,
+                        ),
                         const SizedBox(height: 26),
-                        const _RecentActivityList(),
+                        _RecentActivityList(activities: data.activities),
                       ],
                     ],
                   ),
@@ -85,7 +256,9 @@ class HomeTab extends StatelessWidget {
 }
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader();
+  const _HomeHeader({required this.user});
+
+  final AppUser user;
 
   @override
   Widget build(BuildContext context) {
@@ -93,10 +266,15 @@ class _HomeHeader extends StatelessWidget {
 
     return Row(
       children: [
-        const CircleAvatar(
+        CircleAvatar(
           radius: 22,
           backgroundColor: AppColors.tealTint,
-          child: Icon(Icons.person, color: AppColors.primaryDark),
+          backgroundImage: user.photoUrl.isEmpty
+              ? null
+              : NetworkImage(user.photoUrl),
+          child: user.photoUrl.isEmpty
+              ? const Icon(Icons.person, color: AppColors.primaryDark)
+              : null,
         ),
         const SizedBox(width: 12),
         Text(
@@ -107,7 +285,7 @@ class _HomeHeader extends StatelessWidget {
         ),
         const Spacer(),
         IconButton(
-          onPressed: () {},
+          onPressed: () => Navigator.of(context).pushNamed(AppRoutes.messages),
           icon: const Icon(Icons.notifications_none),
           tooltip: 'Notifications',
         ),
@@ -119,7 +297,7 @@ class _HomeHeader extends StatelessWidget {
 class _Greeting extends StatelessWidget {
   const _Greeting({required this.summary});
 
-  final HomeSummary summary;
+  final _HomeSummary summary;
 
   @override
   Widget build(BuildContext context) {
@@ -162,11 +340,12 @@ class _SearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       textInputAction: TextInputAction.search,
+      onSubmitted: (_) => Navigator.of(context).pushNamed(AppRoutes.discover),
       decoration: InputDecoration(
         prefixIcon: const Icon(Icons.search),
         hintText: 'Search skills or students',
         suffixIcon: IconButton(
-          onPressed: () {},
+          onPressed: () => Navigator.of(context).pushNamed(AppRoutes.discover),
           icon: const Icon(Icons.tune),
           tooltip: 'Filters',
         ),
@@ -178,7 +357,7 @@ class _SearchField extends StatelessWidget {
 class _MatchSummary extends StatelessWidget {
   const _MatchSummary({required this.summary});
 
-  final HomeSummary summary;
+  final _HomeSummary summary;
 
   @override
   Widget build(BuildContext context) {
@@ -228,7 +407,8 @@ class _MatchSummary extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FilledButton(
-                onPressed: () {},
+                onPressed: () =>
+                    Navigator.of(context).pushNamed(AppRoutes.discover),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.cardWhite,
                   foregroundColor: AppColors.primaryDark,
@@ -251,18 +431,24 @@ class _MatchSummary extends StatelessWidget {
 }
 
 class _CategoryRail extends StatelessWidget {
-  const _CategoryRail();
+  const _CategoryRail({required this.categories});
+
+  final List<String> categories;
 
   @override
   Widget build(BuildContext context) {
+    final visibleCategories = categories.isEmpty
+        ? const ['Academic', 'Tech', 'Creative', 'Language']
+        : categories;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          for (final category in mockSkillCategories) ...[
+          for (final category in visibleCategories) ...[
             SkillChip(
               label: category,
-              selected: category == mockSkillCategories.first,
+              selected: category == visibleCategories.first,
             ),
             const SizedBox(width: 10),
           ],
@@ -273,18 +459,26 @@ class _CategoryRail extends StatelessWidget {
 }
 
 class _ResponsiveMatchGrid extends StatelessWidget {
-  const _ResponsiveMatchGrid({required this.students, required this.isWide});
+  const _ResponsiveMatchGrid({required this.matches, required this.isWide});
 
-  final List<Student> students;
+  final List<_HomeMatch> matches;
   final bool isWide;
 
   @override
   Widget build(BuildContext context) {
+    if (matches.isEmpty) {
+      return const AppCard(
+        child: Text(
+          'No matches yet. Add wanted skills or seed demo data to discover students.',
+        ),
+      );
+    }
+
     if (!isWide) {
       return Column(
         children: [
-          for (final student in students) ...[
-            _HomeMatchCard(student: student),
+          for (final match in matches) ...[
+            _HomeMatchCard(match: match),
             const SizedBox(height: 14),
           ],
         ],
@@ -292,7 +486,7 @@ class _ResponsiveMatchGrid extends StatelessWidget {
     }
 
     return GridView.builder(
-      itemCount: students.length,
+      itemCount: matches.length,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -301,15 +495,15 @@ class _ResponsiveMatchGrid extends StatelessWidget {
         mainAxisSpacing: 14,
         mainAxisExtent: 318,
       ),
-      itemBuilder: (context, index) => _HomeMatchCard(student: students[index]),
+      itemBuilder: (context, index) => _HomeMatchCard(match: matches[index]),
     );
   }
 }
 
 class _HomeMatchCard extends StatelessWidget {
-  const _HomeMatchCard({required this.student});
+  const _HomeMatchCard({required this.match});
 
-  final Student student;
+  final _HomeMatch match;
 
   @override
   Widget build(BuildContext context) {
@@ -329,7 +523,7 @@ class _HomeMatchCard extends StatelessWidget {
                     radius: 24,
                     backgroundColor: AppColors.tealTint,
                     child: Text(
-                      student.name.characters.first,
+                      match.teacherName.characters.first,
                       style: const TextStyle(
                         color: AppColors.primaryDark,
                         fontWeight: FontWeight.w800,
@@ -342,13 +536,13 @@ class _HomeMatchCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          student.name,
+                          match.teacherName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: textTheme.titleMedium,
                         ),
                         Text(
-                          student.school,
+                          match.university,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: textTheme.bodyMedium?.copyWith(
@@ -364,7 +558,7 @@ class _HomeMatchCard extends StatelessWidget {
               Align(
                 alignment: Alignment.centerLeft,
                 child: StatusChip(
-                  label: '${student.matchPercent}% Match',
+                  label: '${match.matchPercent}% Match',
                   color: AppColors.warning,
                   icon: Icons.star_border_rounded,
                 ),
@@ -372,12 +566,18 @@ class _HomeMatchCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _SkillExchangePanel(student: student),
+          _SkillExchangePanel(match: match),
           const SizedBox(height: 16),
           AppButton(
             label: 'Request Swap',
-            onPressed: () =>
-                Navigator.of(context).pushNamed(AppRoutes.requestSwap),
+            onPressed: () => Navigator.of(context).pushNamed(
+              AppRoutes.requestSwap,
+              arguments: RequestSwapArguments(
+                selectedSkill: match.skill,
+                teacherId: match.skill.ownerId,
+                teacherName: match.teacherName,
+              ),
+            ),
           ),
         ],
       ),
@@ -386,9 +586,9 @@ class _HomeMatchCard extends StatelessWidget {
 }
 
 class _SkillExchangePanel extends StatelessWidget {
-  const _SkillExchangePanel({required this.student});
+  const _SkillExchangePanel({required this.match});
 
-  final Student student;
+  final _HomeMatch match;
 
   @override
   Widget build(BuildContext context) {
@@ -403,7 +603,7 @@ class _SkillExchangePanel extends StatelessWidget {
           Expanded(
             child: _SkillPair(
               label: 'Teaches',
-              value: student.teaches.first,
+              value: match.skill.title,
               icon: Icons.school_outlined,
             ),
           ),
@@ -411,7 +611,7 @@ class _SkillExchangePanel extends StatelessWidget {
           Expanded(
             child: _SkillPair(
               label: 'Wants',
-              value: student.wantsToLearn.first,
+              value: match.wantsLabel,
               icon: Icons.code,
             ),
           ),
@@ -465,12 +665,31 @@ class _SkillPair extends StatelessWidget {
 }
 
 class _UpcomingSessionCard extends StatelessWidget {
-  const _UpcomingSessionCard();
+  const _UpcomingSessionCard({
+    required this.request,
+    required this.currentUserId,
+  });
+
+  final SwapRequest? request;
+  final String currentUserId;
 
   @override
   Widget build(BuildContext context) {
-    final session = mockUpcomingSession;
+    final session = request;
     final textTheme = Theme.of(context).textTheme;
+
+    if (session == null) {
+      return const AppCard(
+        borderColor: AppColors.accentGold,
+        child: Text('No upcoming accepted sessions yet.'),
+      );
+    }
+
+    final isIncoming = session.toUserId == currentUserId;
+    final partnerName = isIncoming ? session.fromUserName : session.toUserName;
+    final skill = isIncoming
+        ? session.offeredSkillTitle
+        : session.wantedSkillTitle;
 
     return AppCard(
       borderColor: AppColors.accentGold,
@@ -487,34 +706,36 @@ class _UpcomingSessionCard extends StatelessWidget {
                   color: AppColors.softGold,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(session.icon, color: AppColors.primaryDark),
+                child: const Icon(Icons.school, color: AppColors.primaryDark),
               ),
               const Spacer(),
               StatusChip(
-                label: session.dayLabel.toUpperCase(),
+                label: _sessionDayLabel(session.suggestedTime).toUpperCase(),
                 color: AppColors.primaryGreen,
               ),
             ],
           ),
           const SizedBox(height: 18),
-          Text(session.title, style: textTheme.titleMedium),
+          Text('$skill with $partnerName', style: textTheme.titleMedium),
           const SizedBox(height: 6),
           Text(
-            '${session.partnerName} teaches ${session.skill}',
+            '$partnerName teaches $skill',
             style: textTheme.bodyMedium?.copyWith(color: AppColors.textGray),
           ),
           const SizedBox(height: 14),
-          _SessionDetail(icon: Icons.schedule, label: session.time),
-          const SizedBox(height: 8),
           _SessionDetail(
-            icon: Icons.videocam_outlined,
-            label: session.location,
+            icon: Icons.schedule,
+            label: _timeLabel(session.suggestedTime),
           ),
+          const SizedBox(height: 8),
+          _SessionDetail(icon: Icons.videocam_outlined, label: session.mode),
           const SizedBox(height: 18),
           AppButton(
             label: 'Session Details',
             variant: AppButtonVariant.secondary,
-            onPressed: () {},
+            onPressed: () => Navigator.of(
+              context,
+            ).pushNamed(AppRoutes.swapDetails, arguments: session),
           ),
         ],
       ),
@@ -543,7 +764,9 @@ class _SessionDetail extends StatelessWidget {
 }
 
 class _RecentActivityList extends StatelessWidget {
-  const _RecentActivityList();
+  const _RecentActivityList({required this.activities});
+
+  final List<_HomeActivity> activities;
 
   @override
   Widget build(BuildContext context) {
@@ -556,15 +779,22 @@ class _RecentActivityList extends StatelessWidget {
         const SizedBox(height: 12),
         AppCard(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(
-            children: [
-              for (final activity in mockRecentActivities) ...[
-                _ActivityTile(activity: activity),
-                if (activity != mockRecentActivities.last)
-                  const Divider(height: 1, color: AppColors.border),
-              ],
-            ],
-          ),
+          child: activities.isEmpty
+              ? Text(
+                  'Your messages, swaps, and reviews will appear here.',
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textGray,
+                  ),
+                )
+              : Column(
+                  children: [
+                    for (final activity in activities) ...[
+                      _ActivityTile(activity: activity),
+                      if (activity != activities.last)
+                        const Divider(height: 1, color: AppColors.border),
+                    ],
+                  ],
+                ),
         ),
       ],
     );
@@ -574,7 +804,7 @@ class _RecentActivityList extends StatelessWidget {
 class _ActivityTile extends StatelessWidget {
   const _ActivityTile({required this.activity});
 
-  final RecentActivity activity;
+  final _HomeActivity activity;
 
   @override
   Widget build(BuildContext context) {
@@ -700,4 +930,380 @@ class _SummaryChip extends StatelessWidget {
       ),
     );
   }
+}
+
+class _HomeLoading extends StatelessWidget {
+  const _HomeLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SafeArea(
+      child: Center(
+        child: CircularProgressIndicator(color: AppColors.primaryGreen),
+      ),
+    );
+  }
+}
+
+class _HomeMessage extends StatelessWidget {
+  const _HomeMessage({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          AppCard(
+            child: Text(message, style: Theme.of(context).textTheme.bodyLarge),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeData {
+  const _HomeData({
+    required this.user,
+    required this.summary,
+    required this.categories,
+    required this.matches,
+    required this.upcomingSession,
+    required this.activities,
+  });
+
+  final AppUser user;
+  final _HomeSummary summary;
+  final List<String> categories;
+  final List<_HomeMatch> matches;
+  final SwapRequest? upcomingSession;
+  final List<_HomeActivity> activities;
+
+  factory _HomeData.fromFirestore({
+    required AppUser user,
+    required List<firestore_skill.Skill> mySkills,
+    required List<firestore_skill.Skill> offeredSkills,
+    required List<SwapRequest> requests,
+    required List<Review> reviews,
+    required List<Conversation> conversations,
+  }) {
+    final activeRequests = requests.where((request) {
+      return request.status == 'accepted';
+    }).toList();
+    final completedRequests = requests.where((request) {
+      return request.status == 'completed';
+    }).toList();
+    final matches = _buildMatches(mySkills, offeredSkills);
+    final upcomingSession = activeRequests.isEmpty
+        ? null
+        : (activeRequests..sort((a, b) {
+                return a.suggestedTime.compareTo(b.suggestedTime);
+              }))
+              .first;
+    final completedCount = completedRequests.length > user.completedSwaps
+        ? completedRequests.length
+        : user.completedSwaps;
+
+    return _HomeData(
+      user: user,
+      summary: _HomeSummary(
+        studentName: _firstName(user.fullName),
+        potentialSwapCount: matches.length,
+        activeSwapCount: activeRequests.length,
+        completedSessionCount: completedCount,
+      ),
+      categories: _buildCategories(mySkills, offeredSkills),
+      matches: matches,
+      upcomingSession: upcomingSession,
+      activities: _buildActivities(
+        userId: user.uid,
+        requests: requests,
+        reviews: reviews,
+        conversations: conversations,
+      ),
+    );
+  }
+
+  factory _HomeData.preview() {
+    final user = AppUser(
+      uid: 'preview_user',
+      fullName: 'Dawit',
+      email: 'preview@example.com',
+      university: 'Addis Ababa University',
+      department: 'Software Engineering',
+      year: '3rd Year',
+      bio: '',
+      campus: '',
+      photoUrl: '',
+      rating: 4.8,
+      completedSwaps: 8,
+      profileCompleted: true,
+      createdAt: DateTime(2026, 5, 29),
+    );
+    final skill = firestore_skill.Skill(
+      id: 'preview_flutter',
+      ownerId: 'preview_hana',
+      ownerName: 'Hana Tadesse',
+      ownerPhotoUrl: '',
+      university: 'Addis Ababa University',
+      title: 'UI Design',
+      category: 'Creative',
+      level: 'Intermediate',
+      description: 'Practice clean mobile UI design.',
+      type: 'offered',
+      exchangeFor: 'Python',
+      isActive: true,
+      createdAt: DateTime(2026, 5, 29),
+    );
+    final request = SwapRequest(
+      id: 'preview_swap',
+      fromUserId: 'preview_user',
+      fromUserName: 'Dawit',
+      toUserId: 'preview_abel',
+      toUserName: 'Abel',
+      offeredSkillId: 'preview_python',
+      offeredSkillTitle: 'Python',
+      wantedSkillId: 'preview_guitar',
+      wantedSkillTitle: 'Guitar Basics',
+      message: 'Preview session',
+      status: 'accepted',
+      suggestedTime: DateTime(2026, 5, 30, 16),
+      mode: 'Online',
+      createdAt: DateTime(2026, 5, 29),
+      updatedAt: DateTime(2026, 5, 29),
+    );
+
+    return _HomeData(
+      user: user,
+      summary: const _HomeSummary(
+        studentName: 'Dawit',
+        potentialSwapCount: 1,
+        activeSwapCount: 1,
+        completedSessionCount: 8,
+      ),
+      categories: const ['Academic', 'Tech', 'Creative', 'Language'],
+      matches: [
+        _HomeMatch(
+          skill: skill,
+          teacherName: skill.ownerName,
+          university: skill.university,
+          wantsLabel: skill.exchangeFor,
+          matchPercent: 95,
+        ),
+      ],
+      upcomingSession: request,
+      activities: const [],
+    );
+  }
+}
+
+class _HomeSummary {
+  const _HomeSummary({
+    required this.studentName,
+    required this.potentialSwapCount,
+    required this.activeSwapCount,
+    required this.completedSessionCount,
+  });
+
+  final String studentName;
+  final int potentialSwapCount;
+  final int activeSwapCount;
+  final int completedSessionCount;
+}
+
+class _HomeMatch {
+  const _HomeMatch({
+    required this.skill,
+    required this.teacherName,
+    required this.university,
+    required this.wantsLabel,
+    required this.matchPercent,
+  });
+
+  final firestore_skill.Skill skill;
+  final String teacherName;
+  final String university;
+  final String wantsLabel;
+  final int matchPercent;
+}
+
+class _HomeActivity {
+  const _HomeActivity({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.tint,
+    required this.createdAt,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color tint;
+  final DateTime createdAt;
+}
+
+List<_HomeMatch> _buildMatches(
+  List<firestore_skill.Skill> mySkills,
+  List<firestore_skill.Skill> offeredSkills,
+) {
+  final wantedSkills = mySkills.where((skill) => skill.type == 'wanted');
+  final offeredByMe = mySkills.where((skill) => skill.type == 'offered');
+  final wantedText = wantedSkills
+      .map((skill) => skill.title.toLowerCase())
+      .join(' ');
+  final myOfferText = offeredByMe
+      .map((skill) => skill.title.toLowerCase())
+      .join(' ');
+
+  final matches = offeredSkills.map((skill) {
+    final matchesWanted =
+        wantedText.isNotEmpty && wantedText.contains(skill.title.toLowerCase());
+    final exchangeText = skill.exchangeFor.toLowerCase();
+    final matchesExchange =
+        myOfferText.isNotEmpty && exchangeText.contains(myOfferText);
+    final percent = matchesWanted
+        ? 95
+        : matchesExchange
+        ? 88
+        : 75;
+
+    return _HomeMatch(
+      skill: skill,
+      teacherName: skill.ownerName.isEmpty ? 'Student' : skill.ownerName,
+      university: skill.university.isEmpty
+          ? 'University not shared'
+          : skill.university,
+      wantsLabel: skill.exchangeFor.isEmpty ? 'Open swap' : skill.exchangeFor,
+      matchPercent: percent,
+    );
+  }).toList()..sort((a, b) => b.matchPercent.compareTo(a.matchPercent));
+
+  return matches;
+}
+
+List<String> _buildCategories(
+  List<firestore_skill.Skill> mySkills,
+  List<firestore_skill.Skill> offeredSkills,
+) {
+  final categories = <String>{
+    ...mySkills.map((skill) => skill.category),
+    ...offeredSkills.map((skill) => skill.category),
+  }..removeWhere((category) => category.trim().isEmpty);
+
+  return categories.toList();
+}
+
+List<_HomeActivity> _buildActivities({
+  required String userId,
+  required List<SwapRequest> requests,
+  required List<Review> reviews,
+  required List<Conversation> conversations,
+}) {
+  final activities = <_HomeActivity>[];
+
+  for (final conversation in conversations) {
+    if (conversation.lastMessage.isEmpty) continue;
+    final otherId = conversation.participants.firstWhere(
+      (participantId) => participantId != userId,
+      orElse: () => '',
+    );
+    final otherName = conversation.participantNames[otherId] ?? 'Student';
+    activities.add(
+      _HomeActivity(
+        title: '$otherName sent a message',
+        subtitle: _relativeTime(conversation.lastMessageAt),
+        icon: Icons.chat_bubble_outline,
+        tint: const Color(0xFFE6F5F3),
+        createdAt: conversation.lastMessageAt,
+      ),
+    );
+  }
+
+  for (final request in requests) {
+    final otherName = request.fromUserId == userId
+        ? request.toUserName
+        : request.fromUserName;
+    activities.add(
+      _HomeActivity(
+        title: _requestActivityTitle(request.status, otherName),
+        subtitle: _relativeTime(request.updatedAt),
+        icon: request.status == 'accepted'
+            ? Icons.handshake_outlined
+            : Icons.swap_horiz,
+        tint: const Color(0xFFFEF3C7),
+        createdAt: request.updatedAt,
+      ),
+    );
+  }
+
+  for (final review in reviews) {
+    activities.add(
+      _HomeActivity(
+        title: 'You received a session review',
+        subtitle: _relativeTime(review.createdAt),
+        icon: Icons.star_border_rounded,
+        tint: const Color(0xFFEAF2FF),
+        createdAt: review.createdAt,
+      ),
+    );
+  }
+
+  activities.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  return activities.take(3).toList();
+}
+
+String _requestActivityTitle(String status, String otherName) {
+  final name = otherName.isEmpty ? 'Student' : otherName;
+
+  return switch (status) {
+    'pending' => '$name requested a swap',
+    'accepted' => '$name accepted your swap',
+    'completed' => 'Session completed with $name',
+    'declined' => '$name declined a swap',
+    'cancelled' => '$name cancelled a swap',
+    _ => 'Swap updated with $name',
+  };
+}
+
+String _firstName(String fullName) {
+  final trimmed = fullName.trim();
+  if (trimmed.isEmpty) return 'Student';
+
+  return trimmed.split(' ').first;
+}
+
+String _sessionDayLabel(DateTime date) {
+  final now = DateTime.now();
+  final tomorrow = now.add(const Duration(days: 1));
+
+  if (_sameDay(date, now)) return 'Today';
+  if (_sameDay(date, tomorrow)) return 'Tomorrow';
+
+  return '${date.month}/${date.day}';
+}
+
+String _timeLabel(DateTime date) {
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
+}
+
+String _relativeTime(DateTime date) {
+  final difference = DateTime.now().difference(date);
+  if (difference.inMinutes < 1) return 'Just now';
+  if (difference.inMinutes < 60) return '${difference.inMinutes} min ago';
+  if (difference.inHours < 24) return '${difference.inHours} hours ago';
+  if (difference.inDays == 1) return 'Yesterday';
+
+  return '${difference.inDays} days ago';
+}
+
+bool _sameDay(DateTime first, DateTime second) {
+  return first.year == second.year &&
+      first.month == second.month &&
+      first.day == second.day;
 }
