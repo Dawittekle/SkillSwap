@@ -254,6 +254,20 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-29 Home Button And Search Handoff
+
+### Completed
+- Made Home search submit open the existing Discover tab with the typed query applied.
+- Kept the bottom navigation visible when moving from Home search to Discover.
+- Made Home filter/search related controls open Discover.
+- Made Home category chips open Discover with the category applied as the query.
+- Kept visual styling unchanged.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
