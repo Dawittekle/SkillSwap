@@ -286,6 +286,25 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-29 Startup Loading And Friendly Error States
+
+### Completed
+- Moved Firebase initialization into the app widget tree so SkillSwap shows a branded loading screen instead of a white blank screen.
+- Added reusable startup/state views:
+  - `AppLoadingScreen`
+  - `NoInternetView`
+  - `AppErrorView`
+- Updated AuthGate to show the branded loading screen while auth state and profile data are loading.
+- Added retry handling for startup, auth-state, and profile-loading failures.
+- Added no-internet retry states for login, sign up, and forgot password network failures.
+- Added Firebase error message helpers for friendly Auth and Firestore messages.
+- Mapped Firebase network errors to the no-internet retry view.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
