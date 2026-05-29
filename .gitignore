@@ -22,4 +22,6 @@ ios/Pods/
 .DS_Store
 
 # Existing local pattern kept from the original repo.
-/references
+references/
+doc/
+docs/
