@@ -332,6 +332,19 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-29 Chat Before Swap Permission Fix
+
+### Completed
+- Fixed chat creation from Skill Details or Public Profile before a swap exists.
+- Changed conversation opening to write/merge the deterministic conversation document before reading messages.
+- Avoided reading a missing conversation document, which can fail under participant-based Firestore security rules.
+- Kept one conversation per pair of users using the existing sorted user id conversation id.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
