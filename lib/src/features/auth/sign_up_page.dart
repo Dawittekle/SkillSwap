@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:skill_swap/data/firebase_error_messages.dart';
 import 'package:skill_swap/data/models/app_user.dart';
 import 'package:skill_swap/data/repositories/user_repository.dart';
 import 'package:skill_swap/data/services/auth_service.dart';
 import 'package:skill_swap/src/app.dart';
 import 'package:skill_swap/src/core/theme/app_colors.dart';
 import 'package:skill_swap/src/core/widgets/app_card.dart';
+import 'package:skill_swap/src/core/widgets/app_state_views.dart';
 import 'package:skill_swap/src/features/auth/auth_helpers.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -23,6 +25,7 @@ class _SignUpPageState extends State<SignUpPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _showNoInternet = false;
 
   AuthService get _authService => widget.authService ?? AuthService();
   UserRepository get _userRepository =>
@@ -78,6 +81,11 @@ class _SignUpPageState extends State<SignUpPage> {
       );
     } catch (error) {
       if (!mounted) return;
+      if (isNetworkFirebaseError(error)) {
+        setState(() => _showNoInternet = true);
+        return;
+      }
+
       showAuthMessage(context, error.toString(), isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -87,6 +95,15 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+
+    if (_showNoInternet) {
+      return NoInternetView(
+        onRetry: () {
+          setState(() => _showNoInternet = false);
+          _submit();
+        },
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Sign up')),

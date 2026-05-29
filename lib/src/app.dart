@@ -1,7 +1,11 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:skill_swap/data/firebase_error_messages.dart';
 import 'package:skill_swap/data/models/skill.dart' as firestore_skill;
 import 'package:skill_swap/data/models/swap_request.dart';
+import 'package:skill_swap/firebase_options.dart';
 import 'package:skill_swap/src/core/theme/app_theme.dart';
+import 'package:skill_swap/src/core/widgets/app_state_views.dart';
 import 'package:skill_swap/src/features/auth/auth_gate.dart';
 import 'package:skill_swap/src/features/auth/forgot_password_page.dart';
 import 'package:skill_swap/src/features/auth/profile_setup_page.dart';
@@ -29,10 +33,9 @@ class SkillSwapApp extends StatelessWidget {
       title: 'SkillSwap',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      initialRoute: AppRoutes.home,
+      home: const _FirebaseStartupGate(),
       onGenerateRoute: _generateRoute,
       routes: {
-        AppRoutes.home: (_) => const AuthGate(),
         AppRoutes.signUp: (_) => const SignUpPage(),
         AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
         AppRoutes.skillsSetup: (_) => const SkillsSetupPage(),
@@ -177,6 +180,63 @@ class SkillSwapApp extends StatelessWidget {
     }
 
     return null;
+  }
+}
+
+class _FirebaseStartupGate extends StatefulWidget {
+  const _FirebaseStartupGate();
+
+  @override
+  State<_FirebaseStartupGate> createState() => _FirebaseStartupGateState();
+}
+
+class _FirebaseStartupGateState extends State<_FirebaseStartupGate> {
+  late Future<void> _firebaseStartup;
+
+  @override
+  void initState() {
+    super.initState();
+    _firebaseStartup = _initializeFirebase();
+  }
+
+  Future<void> _initializeFirebase() async {
+    if (Firebase.apps.isNotEmpty) return;
+
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
+
+  void _retryStartup() {
+    setState(() {
+      _firebaseStartup = _initializeFirebase();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<void>(
+      future: _firebaseStartup,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const AppLoadingScreen();
+        }
+
+        if (snapshot.hasError) {
+          final error = snapshot.error;
+          if (isNetworkFirebaseError(error)) {
+            return NoInternetView(onRetry: _retryStartup);
+          }
+
+          return AppErrorView(
+            message: friendlyFirebaseErrorMessage(error),
+            onRetry: _retryStartup,
+          );
+        }
+
+        return const AuthGate();
+      },
+    );
   }
 }
 

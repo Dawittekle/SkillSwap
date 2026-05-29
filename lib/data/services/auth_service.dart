@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:skill_swap/data/firebase_error_messages.dart';
 
 class AuthService {
   AuthService({FirebaseAuth? firebaseAuth})
@@ -21,7 +22,7 @@ class AuthService {
         password: password,
       );
     } on FirebaseAuthException catch (error) {
-      throw Exception(_authErrorMessage(error));
+      throw Exception(friendlyAuthErrorMessage(error));
     }
   }
 
@@ -32,7 +33,7 @@ class AuthService {
         password: password,
       );
     } on FirebaseAuthException catch (error) {
-      throw Exception(_authErrorMessage(error));
+      throw Exception(friendlyAuthErrorMessage(error));
     }
   }
 
@@ -40,7 +41,7 @@ class AuthService {
     try {
       await _firebaseAuth.signOut();
     } on FirebaseAuthException catch (error) {
-      throw Exception(_authErrorMessage(error));
+      throw Exception(friendlyAuthErrorMessage(error));
     }
   }
 
@@ -48,26 +49,7 @@ class AuthService {
     try {
       await _firebaseAuth.sendPasswordResetEmail(email: email.trim());
     } on FirebaseAuthException catch (error) {
-      throw Exception(_authErrorMessage(error));
-    }
-  }
-
-  String _authErrorMessage(FirebaseAuthException error) {
-    switch (error.code) {
-      case 'email-already-in-use':
-        return 'An account already exists for this email.';
-      case 'invalid-email':
-        return 'Please enter a valid email address.';
-      case 'user-not-found':
-      case 'wrong-password':
-      case 'invalid-credential':
-        return 'The email or password is incorrect.';
-      case 'weak-password':
-        return 'Please choose a stronger password.';
-      case 'network-request-failed':
-        return 'Network error. Please check your internet connection.';
-      default:
-        return error.message ?? 'Authentication failed. Please try again.';
+      throw Exception(friendlyAuthErrorMessage(error));
     }
   }
 }

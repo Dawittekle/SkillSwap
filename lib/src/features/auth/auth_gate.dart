@@ -1,29 +1,49 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:skill_swap/data/firebase_error_messages.dart';
 import 'package:skill_swap/data/models/app_user.dart';
 import 'package:skill_swap/data/repositories/user_repository.dart';
 import 'package:skill_swap/data/services/auth_service.dart';
-import 'package:skill_swap/src/core/theme/app_colors.dart';
+import 'package:skill_swap/src/core/widgets/app_state_views.dart';
 import 'package:skill_swap/src/features/auth/login_page.dart';
 import 'package:skill_swap/src/features/auth/profile_setup_page.dart';
 import 'package:skill_swap/src/features/shell/bottom_navigation_shell.dart';
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key, this.authService, this.userRepository});
 
   final AuthService? authService;
   final UserRepository? userRepository;
 
   @override
-  Widget build(BuildContext context) {
-    final authService = this.authService ?? AuthService();
-    final userRepository = this.userRepository ?? UserRepository();
+  State<AuthGate> createState() => _AuthGateState();
+}
 
+class _AuthGateState extends State<AuthGate> {
+  int _retryCount = 0;
+
+  AuthService get _authService => widget.authService ?? AuthService();
+  UserRepository get _userRepository =>
+      widget.userRepository ?? UserRepository();
+
+  void _retry() {
+    setState(() {
+      _retryCount++;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-      stream: authService.authStateChanges(),
+      key: ValueKey('auth-$_retryCount'),
+      stream: _authService.authStateChanges(),
       builder: (context, authSnapshot) {
         if (authSnapshot.connectionState == ConnectionState.waiting) {
-          return const _AuthLoadingScreen();
+          return const AppLoadingScreen();
+        }
+
+        if (authSnapshot.hasError) {
+          return _startupErrorView(authSnapshot.error);
         }
 
         final firebaseUser = authSnapshot.data;
@@ -32,10 +52,15 @@ class AuthGate extends StatelessWidget {
         }
 
         return StreamBuilder<AppUser?>(
-          stream: userRepository.watchUser(firebaseUser.uid),
+          key: ValueKey('profile-${firebaseUser.uid}-$_retryCount'),
+          stream: _userRepository.watchUser(firebaseUser.uid),
           builder: (context, userSnapshot) {
             if (userSnapshot.connectionState == ConnectionState.waiting) {
-              return const _AuthLoadingScreen();
+              return const AppLoadingScreen();
+            }
+
+            if (userSnapshot.hasError) {
+              return _startupErrorView(userSnapshot.error);
             }
 
             final appUser = userSnapshot.data;
@@ -49,17 +74,15 @@ class AuthGate extends StatelessWidget {
       },
     );
   }
-}
 
-class _AuthLoadingScreen extends StatelessWidget {
-  const _AuthLoadingScreen();
+  Widget _startupErrorView(Object? error) {
+    if (isNetworkFirebaseError(error)) {
+      return NoInternetView(onRetry: _retry);
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(color: AppColors.primaryGreen),
-      ),
+    return AppErrorView(
+      message: friendlyFirebaseErrorMessage(error),
+      onRetry: _retry,
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:skill_swap/data/firebase_error_messages.dart';
 
 Map<String, dynamic> dataWithDocumentId(
   DocumentSnapshot<Map<String, dynamic>> document,
@@ -25,7 +26,7 @@ Map<String, dynamic> firestoreUpdateData(Map<String, dynamic> data) {
 
 Exception friendlyFirestoreException(Object error, String fallbackMessage) {
   if (error is FirebaseException) {
-    return Exception(error.message ?? fallbackMessage);
+    return Exception(friendlyFirestoreErrorMessage(error));
   }
 
   return Exception(fallbackMessage);
