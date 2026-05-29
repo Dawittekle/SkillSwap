@@ -1,60 +1,410 @@
 # SkillSwap
 
-SkillSwap is a Flutter demo app for student-to-student skill exchange. Students can create a profile, add skills they can teach, add skills they want to learn, discover other students, request swaps, chat, and review completed sessions.
+SkillSwap is a Flutter and Firebase final project for peer-to-peer student skill exchange. The app helps students exchange knowledge instead of paying money for tutoring.
+
+For example, one student can teach Physics and wants to learn Maths. Another student can teach Maths and wants to learn Physics. SkillSwap helps them discover each other, send a swap request, chat, complete the session, and leave a review.
+
+## Screenshots
+
+The screenshots below are stored in `assets/readme/`.
+
+| Login | Home | Discover |
+|---|---|---|
+| <img src="assets/readme/login.png" width="180" alt="SkillSwap login screen"> | <img src="assets/readme/home.png" width="180" alt="SkillSwap home screen"> | <img src="assets/readme/discover.png" width="180" alt="SkillSwap discover screen"> |
+
+| Request Swap | My Swaps | Messages |
+|---|---|---|
+| <img src="assets/readme/request_swap.png" width="180" alt="Request swap screen"> | <img src="assets/readme/my_swaps.png" width="180" alt="My swaps screen"> | <img src="assets/readme/messages.png" width="180" alt="Messages screen"> |
+
+| Profile | Manage Skills | Rate Session |
+|---|---|---|
+| <img src="assets/readme/profile.png" width="180" alt="Profile screen"> | <img src="assets/readme/manage_skills.png" width="180" alt="Manage skills screen"> | <img src="assets/readme/review.png" width="180" alt="Rate session screen"> |
+
+## Problem Statement
+
+Many students need help learning academic, technical, creative, or language skills. Paid tutoring can be expensive, but students already have many useful skills they can share with each other.
+
+The problem is that students usually do not know:
+
+- Who can teach a specific skill.
+- Who wants to learn the skill they can teach.
+- How to request a fair skill exchange.
+- How to communicate and complete a session.
+- How to know if another student is reliable.
+
+SkillSwap solves this by creating a simple system for students to exchange skills with each other.
 
 ## Main Features
 
-- Firebase Authentication for sign up, login, logout, and password reset
-- Firestore user profiles
-- Offered and wanted skills
-- Discover page with search, filters, sorting, and match score
-- Swap request flow
-- Messages and chat
-- Session reviews and ratings
-- Development-only Ethiopian demo data seeding
+- Email/password authentication.
+- Profile setup.
+- Offered and wanted skills.
+- Discover and search.
+- Match score.
+- Swap requests.
+- My Swaps tabs for Requests, Upcoming, and Completed.
+- Chat between students.
+- Reviews after completed swaps.
+- Loading, error, and empty states.
+- No internet handling.
+- Development demo data seeding.
 
-## Firebase Services Used
+## Technology Stack
 
-- Firebase Auth
+### Frontend
+
+- Flutter
+- Dart
+
+### Backend
+
+- Firebase Authentication
 - Cloud Firestore
 
-## Important Firestore Collections
+### Development and Demo
 
-- `users`
-- `skills`
-- `swapRequests`
-- `conversations`
-- `conversations/{conversationId}/messages`
-- `reviews`
+- Firebase Console for checking users and collections.
+- Chrome web target for presentation demo.
+- No custom backend server.
 
-## Folder Structure
+## System Architecture Diagram
+
+```text
+User
+  |
+  v
+Flutter UI
+  |
+  |-- Auth pages
+  |-- Home
+  |-- Discover
+  |-- Swaps
+  |-- Messages
+  |-- Profile
+  |
+  v
+Repositories and Services
+  |
+  |-- AuthService
+  |-- UserRepository
+  |-- SkillRepository
+  |-- SwapRepository
+  |-- ChatRepository
+  |-- ReviewRepository
+  |
+  v
+Firebase
+  |
+  |-- Firebase Authentication
+  |-- Cloud Firestore
+        |
+        |-- users
+        |-- skills
+        |-- swapRequests
+        |-- conversations
+        |-- reviews
+```
+
+## Folder Structure Explanation
 
 ```text
 lib/
-  main.dart                 App entry point
-  app.dart                  Root MaterialApp and Firebase startup gate
+  main.dart
+  app.dart
+  firebase_options.dart
 
-  core/                     Shared constants, theme, utilities, and widgets
-  data/                     Models, Firebase services, and repositories
-  demo/                     Development/demo seed data and mock fallback data
-  features/                 App pages grouped by feature
-  routing/                  Route names, route arguments, and route builder
+  core/
+    constants/
+    theme/
+    utils/
+    widgets/
+
+  data/
+    models/
+    services/
+    repositories/
+
+  demo/
+
+  features/
+    auth/
+    profile_setup/
+    home/
+    discover/
+    swaps/
+    messages/
+    profile/
+    reviews/
+
+  routing/
 ```
 
-## How The Code Is Organized
+### Important Folders
 
-- `core/theme` contains app colors, text styles, and the Material theme.
-- `core/widgets` contains reusable widgets such as buttons, cards, loading views, chips, and snackbars.
-- `core/utils` contains validators, date formatting, and friendly Firebase error handling.
-- `data/models` contains Firestore data models and map conversion logic.
-- `data/services/auth_service.dart` contains Firebase Authentication methods.
-- `data/repositories` contains Firestore collection logic.
-- `features` contains UI pages grouped by app area.
-- `routing` keeps navigation names and route creation in one place.
+- `core/`: shared app code such as colors, theme, validators, error handling, buttons, cards, loading screens, and reusable widgets.
+- `data/models/`: Dart classes that represent Firestore data.
+- `data/services/`: low-level Firebase services, such as authentication.
+- `data/repositories/`: Firestore operations for each collection.
+- `features/`: app screens grouped by feature.
+- `routing/`: route names, route arguments, and route generation.
+- `demo/`: demo seed data and mock fallback data.
+- `docs/`: presentation guides for the team.
 
-## How To Run
+## Firestore Collections and Important Fields
 
-Use the Flutter SDK installed on this machine:
+### `users`
+
+Stores student profile information.
+
+Important fields:
+
+- `uid`
+- `fullName`
+- `email`
+- `university`
+- `department`
+- `year`
+- `bio`
+- `campus`
+- `photoUrl`
+- `rating`
+- `completedSwaps`
+- `profileCompleted`
+- `createdAt`
+
+### `skills`
+
+Stores skills students can teach or want to learn.
+
+Important fields:
+
+- `id`
+- `ownerId`
+- `ownerName`
+- `ownerPhotoUrl`
+- `university`
+- `title`
+- `category`
+- `level`
+- `description`
+- `type`
+- `exchangeFor`
+- `isActive`
+- `createdAt`
+
+`type` can be:
+
+- `offered`: a skill the user can teach.
+- `wanted`: a skill the user wants to learn.
+
+### `swapRequests`
+
+Stores skill exchange requests between two students.
+
+Important fields:
+
+- `id`
+- `fromUserId`
+- `fromUserName`
+- `toUserId`
+- `toUserName`
+- `offeredSkillId`
+- `offeredSkillTitle`
+- `wantedSkillId`
+- `wantedSkillTitle`
+- `message`
+- `status`
+- `suggestedTime`
+- `mode`
+- `createdAt`
+- `updatedAt`
+
+Possible statuses:
+
+- `pending`
+- `accepted`
+- `declined`
+- `completed`
+
+### `conversations`
+
+Stores chat conversation summaries.
+
+Important fields:
+
+- `id`
+- `participants`
+- `participantNames`
+- `lastMessage`
+- `lastMessageAt`
+- `relatedRequestId`
+- `lastSenderId`
+- `unreadBy`
+
+Messages are stored in:
+
+```text
+conversations/{conversationId}/messages
+```
+
+Message fields:
+
+- `id`
+- `conversationId`
+- `senderId`
+- `text`
+- `createdAt`
+- `readBy`
+
+### `reviews`
+
+Stores reviews after completed swap sessions.
+
+Important fields:
+
+- `id`
+- `sessionId`
+- `reviewerId`
+- `revieweeId`
+- `rating`
+- `tags`
+- `comment`
+- `createdAt`
+
+## Match Score Logic
+
+The match score helps users find better swap partners.
+
+A good match means:
+
+- The other student teaches something the current user wants to learn.
+- The other student wants something the current user can teach.
+
+Scoring:
+
+- `+50` if the other student's offered skill matches one of the current user's wanted skills.
+- `+30` if the other student's `exchangeFor` matches one of the current user's offered skills.
+- `+10` if the skill category matches a category from the current user's wanted skills.
+- `+5` if both students are from the same university or campus.
+- `+5` if the other student's rating is 4.5 or above.
+- Maximum score is `100`.
+
+Labels:
+
+- `85-100`: Great Match
+- `65-84`: Good Match
+- `40-64`: Possible Match
+- `1-39`: Low Match
+- `0`: Not a Match
+
+This makes Discover more useful because it is based on real skill compatibility, not random ordering.
+
+## Important Design and Product Decisions
+
+### One Chat Per Pair of Users
+
+The app creates one conversation for each pair of users. The conversation id is made by sorting the two user ids.
+
+Example:
+
+```text
+smallerUid_largerUid
+```
+
+This prevents duplicate chats between the same two students.
+
+### Duplicate Swap Request Prevention
+
+The app checks if there is already an active request between the same users for the same selected skill.
+
+If a request is already `pending` or `accepted`, the app does not create another one.
+
+Message shown:
+
+```text
+You already have an active request with this student.
+```
+
+### Match Score Based on Real Compatibility
+
+The app does not give a high score just because a skill exists. It gives a high score when the other student teaches what the user wants and wants something the user can offer.
+
+### Friendly Firebase Error Messages
+
+Firebase errors are converted into simple messages that users can understand.
+
+Example:
+
+- Wrong password -> friendly login error.
+- No internet -> retry message.
+- Permission problem -> clear access message.
+
+### SkillSwap Loading Screen
+
+The app shows a branded SkillSwap loading screen instead of a blank white screen during startup.
+
+### Ethiopian-Inspired Green and Gold Palette
+
+The app uses green and gold as the main design direction.
+
+- Green represents learning, growth, and community.
+- Gold gives a warm Ethiopian-inspired accent.
+- The design avoids using red-yellow-green everywhere so it stays modern and clean.
+
+## Security Measures
+
+Security is handled mainly through Firebase Authentication and Firestore rules.
+
+Important security ideas:
+
+- Users must be signed in to access app data.
+- Each user has a Firebase `uid`.
+- User profile documents are connected to the user's `uid`.
+- Users should only edit their own profile.
+- Users should only create, update, or delete their own skills.
+- Swap requests should only be visible to the two users involved.
+- Conversations should only be visible to participants.
+- Messages should only be read or written inside conversations where the user is a participant.
+- Reviews should be created by the signed-in reviewer.
+
+No real passwords or private Firebase keys should be written in this repository.
+
+## Error and No Internet Handling
+
+The app includes user-friendly states for:
+
+- Startup loading.
+- Auth checking.
+- Profile loading.
+- Firestore loading.
+- Empty lists.
+- Firebase errors.
+- No internet errors.
+
+Examples:
+
+- If the app is starting, it shows the SkillSwap loading screen.
+- If there are no skills, the user sees an empty state.
+- If there is no internet, the user sees a clear retry message.
+- If login fails, the user sees a friendly message instead of a technical Firebase error.
+
+Important file:
+
+```text
+lib/core/utils/app_error_handler.dart
+```
+
+## How To Run The Project
+
+Make sure Flutter is installed and available in your terminal.
+
+```bash
+flutter pub get
+flutter analyze
+flutter run -d chrome
+```
+
+If Flutter is installed locally in this workspace, use:
 
 ```bash
 export PATH="$PATH:/home/dawit/tools/flutter/bin"
@@ -62,34 +412,126 @@ flutter pub get
 flutter run -d chrome
 ```
 
-## How To Verify
+To build for web:
 
 ```bash
-flutter analyze
-flutter test
 flutter build web
 ```
 
-## How To Test With Two Users
+## Firebase Setup Instructions
 
-1. Create or log in to the first account.
-2. Complete the profile setup.
-3. Add at least one offered skill and one wanted skill.
-4. Log out.
-5. Create or log in to a second account.
-6. Complete the second profile and add skills.
-7. Use Discover to find the other student's offered skill.
-8. Send a swap request.
-9. Log back into the first account and accept the request.
-10. Open Messages and send a chat message.
-11. Mark the swap completed and submit a review.
+Before running the app with Firebase, make sure:
 
-## Demo Data
+1. A Firebase project exists.
+2. Firebase CLI is installed and logged in.
+3. FlutterFire CLI is installed.
+4. The project has been configured using:
 
-The demo seeding helper lives in:
-
-```text
-lib/demo/demo_seed_data.dart
+```bash
+flutterfire configure
 ```
 
-It is for development/demo use only and should be removed before a real production release.
+5. The file below exists:
+
+```text
+lib/firebase_options.dart
+```
+
+6. Firebase Authentication is enabled.
+7. Email/password sign-in is enabled.
+8. Cloud Firestore database is created.
+9. Firestore security rules are published.
+
+Do not commit real passwords, private keys, or secret credentials.
+
+## Demo Flow For Presentation
+
+Recommended final demo:
+
+1. Open the app.
+2. Show the SkillSwap login screen.
+3. Login as User A.
+4. Show User A profile and skills.
+5. Open Discover.
+6. Find User B's offered skill.
+7. Open Skill Details.
+8. Send a swap request.
+9. Logout.
+10. Login as User B.
+11. Open My Swaps.
+12. Accept the request.
+13. Open Messages and send a chat message.
+14. Mark the swap as completed.
+15. Leave a review.
+16. Show the review or rating on the profile.
+17. Show Firebase Console collections if the teacher asks.
+
+## Team Responsibilities
+
+### Student 1: Project Idea and UI/UX
+
+- Problem statement.
+- User flow.
+- UI/UX planning.
+- Design direction.
+- Demo story.
+
+### Student 2: Flutter Frontend
+
+- Flutter page structure.
+- Reusable widgets.
+- Theme system.
+- Navigation.
+- Loading, error, and empty states.
+
+### Student 3: Firebase Authentication and Profiles
+
+- Signup and login.
+- Logout and forgot password.
+- AuthGate.
+- User profile creation.
+- Profile setup.
+- Friendly error handling.
+
+### Student 4: Firestore Features
+
+- Skills collection.
+- Discover and match score.
+- Swap requests.
+- Chat and conversations.
+- Reviews.
+- Duplicate request and duplicate chat prevention.
+
+## Challenges
+
+Important challenges during development:
+
+- Organizing the code into a clean folder structure.
+- Connecting the UI to Firebase without making the code too complicated.
+- Handling signup, login, and profile completion correctly.
+- Creating a match score that feels logical.
+- Preventing duplicate swap requests.
+- Preventing duplicate chat conversations.
+- Handling no internet and Firebase errors.
+- Testing the full flow with two users.
+- Keeping the app beginner-friendly for a final project presentation.
+
+## Future Improvements
+
+Possible improvements:
+
+- Push notifications.
+- Google sign-in.
+- Profile image upload.
+- Better scheduling calendar.
+- Advanced search and filtering.
+- Better recommendation algorithm.
+- Admin dashboard.
+- Report user and moderation system.
+- In-app notification center.
+- More detailed availability settings.
+- Better review analytics.
+
+## Project Status
+
+SkillSwap is a working final project demo. It includes a Flutter frontend, Firebase Authentication, Cloud Firestore data, and a complete student skill exchange flow.
