@@ -217,19 +217,6 @@ class _SkillDetailsContent extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                AppButton(
-                  label: 'Message ${_firstName(teacherName)}',
-                  icon: Icons.chat_bubble_outline,
-                  variant: AppButtonVariant.secondary,
-                  onPressed: () => Navigator.of(context).pushNamed(
-                    AppRoutes.chat,
-                    arguments: ChatArguments(
-                      otherUserId: skill.ownerId,
-                      otherUserName: teacherName,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -400,11 +387,4 @@ class _SkillDetailsData {
 
   final firestore_skill.Skill skill;
   final AppUser? teacher;
-}
-
-String _firstName(String name) {
-  final trimmedName = name.trim();
-  if (trimmedName.isEmpty) return 'Student';
-
-  return trimmedName.split(' ').first;
 }
