@@ -345,6 +345,18 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-29 Skill Details CTA Simplification
+
+### Completed
+- Removed the Message button from Skill Details.
+- Kept Request Swap as the only primary action on the Skill Details page.
+- Left chat functionality available from existing conversation and swap/session entry points.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
