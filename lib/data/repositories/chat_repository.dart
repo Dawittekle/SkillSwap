@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:skill_swap/core/constants/app_constants.dart';
 import 'package:skill_swap/data/models/chat_message.dart';
 import 'package:skill_swap/data/models/conversation.dart';
 import 'package:skill_swap/data/repositories/firestore_repository_helpers.dart';
 
+// This file contains Firestore operations for conversations and messages.
 class ChatRepository {
   ChatRepository({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -10,7 +12,7 @@ class ChatRepository {
   final FirebaseFirestore _firestore;
 
   CollectionReference<Map<String, dynamic>> get _conversations {
-    return _firestore.collection('conversations');
+    return _firestore.collection(AppConstants.conversationsCollection);
   }
 
   Future<String> createOrGetConversation(
@@ -145,7 +147,9 @@ class ChatRepository {
   }
 
   CollectionReference<Map<String, dynamic>> _messages(String conversationId) {
-    return _conversations.doc(conversationId).collection('messages');
+    return _conversations
+        .doc(conversationId)
+        .collection(AppConstants.messagesCollection);
   }
 
   List<Conversation> _conversationsFromSnapshot(

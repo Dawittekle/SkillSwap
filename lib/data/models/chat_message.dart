@@ -1,5 +1,6 @@
 import 'package:skill_swap/data/models/model_helpers.dart';
 
+// Represents one text message inside a conversation.
 class ChatMessage {
   const ChatMessage({
     required this.id,

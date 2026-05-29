@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:skill_swap/core/constants/app_constants.dart';
 import 'package:skill_swap/data/models/skill.dart';
 import 'package:skill_swap/data/repositories/firestore_repository_helpers.dart';
 
+// This file contains Firestore operations for adding, reading, updating,
+// and deleting skills.
 class SkillRepository {
   SkillRepository({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -9,7 +12,7 @@ class SkillRepository {
   final FirebaseFirestore _firestore;
 
   CollectionReference<Map<String, dynamic>> get _skills {
-    return _firestore.collection('skills');
+    return _firestore.collection(AppConstants.skillsCollection);
   }
 
   Future<void> createSkill(Skill skill) async {

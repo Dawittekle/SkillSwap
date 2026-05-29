@@ -1,5 +1,6 @@
 import 'package:skill_swap/data/models/model_helpers.dart';
 
+// Represents a request to exchange one student's skill for another.
 class SwapRequest {
   const SwapRequest({
     required this.id,

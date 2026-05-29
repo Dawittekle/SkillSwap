@@ -1,5 +1,6 @@
 import 'package:skill_swap/data/models/model_helpers.dart';
 
+// Represents a SkillSwap student profile stored in the users collection.
 class AppUser {
   const AppUser({
     required this.uid,

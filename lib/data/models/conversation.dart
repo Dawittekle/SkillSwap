@@ -1,5 +1,6 @@
 import 'package:skill_swap/data/models/model_helpers.dart';
 
+// Represents a chat thread between two SkillSwap users.
 class Conversation {
   const Conversation({
     required this.id,

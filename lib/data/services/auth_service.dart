@@ -1,6 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:skill_swap/data/firebase_error_messages.dart';
+import 'package:skill_swap/core/utils/app_error_handler.dart';
 
+// This file contains Firebase Authentication methods such as login, signup,
+// logout, and password reset.
 class AuthService {
   AuthService({FirebaseAuth? firebaseAuth})
     : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;

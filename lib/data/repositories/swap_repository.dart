@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:skill_swap/core/constants/app_constants.dart';
 import 'package:skill_swap/data/models/swap_request.dart';
 import 'package:skill_swap/data/repositories/firestore_repository_helpers.dart';
 
+// This file contains Firestore operations for swap requests.
 class SwapRepository {
   SwapRepository({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -9,7 +11,7 @@ class SwapRepository {
   final FirebaseFirestore _firestore;
 
   CollectionReference<Map<String, dynamic>> get _swapRequests {
-    return _firestore.collection('swapRequests');
+    return _firestore.collection(AppConstants.swapRequestsCollection);
   }
 
   Future<String> createSwapRequest(SwapRequest request) async {

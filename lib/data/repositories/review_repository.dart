@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:skill_swap/core/constants/app_constants.dart';
 import 'package:skill_swap/data/models/review.dart';
 import 'package:skill_swap/data/repositories/firestore_repository_helpers.dart';
 
+// This file contains Firestore operations for session reviews.
 class ReviewRepository {
   ReviewRepository({FirebaseFirestore? firestore})
     : _firestore = firestore ?? FirebaseFirestore.instance;
@@ -9,7 +11,7 @@ class ReviewRepository {
   final FirebaseFirestore _firestore;
 
   CollectionReference<Map<String, dynamic>> get _reviews {
-    return _firestore.collection('reviews');
+    return _firestore.collection(AppConstants.reviewsCollection);
   }
 
   Future<void> createReview(Review review) async {
@@ -83,9 +85,10 @@ class ReviewRepository {
     );
     final average = total / reviews.length;
 
-    await _firestore.collection('users').doc(userId).update({
-      'rating': average,
-    });
+    await _firestore
+        .collection(AppConstants.usersCollection)
+        .doc(userId)
+        .update({'rating': average});
   }
 }
 

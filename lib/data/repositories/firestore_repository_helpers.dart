@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:skill_swap/data/firebase_error_messages.dart';
+import 'package:skill_swap/core/utils/app_error_handler.dart';
 
 Map<String, dynamic> dataWithDocumentId(
   DocumentSnapshot<Map<String, dynamic>> document,

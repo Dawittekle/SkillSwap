@@ -1,5 +1,6 @@
 import 'package:skill_swap/data/models/model_helpers.dart';
 
+// Represents a review left after a completed swap session.
 class Review {
   const Review({
     required this.id,

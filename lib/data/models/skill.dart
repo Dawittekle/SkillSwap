@@ -1,5 +1,6 @@
 import 'package:skill_swap/data/models/model_helpers.dart';
 
+// Represents one teachable or wanted skill stored in the skills collection.
 class Skill {
   const Skill({
     required this.id,
