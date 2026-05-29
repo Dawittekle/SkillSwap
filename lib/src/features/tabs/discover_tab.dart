@@ -80,28 +80,56 @@ class _DiscoverTabState extends State<DiscoverTab> {
     List<firestore_skill.Skill> skills,
     Map<String, AppUser> usersById,
   ) {
-    final normalizedQuery = _query.trim().toLowerCase();
+    final normalizedQuery = _normalizeText(_query);
 
     return skills.where((skill) {
       final matchesCategory =
           _selectedCategory == 'All' || skill.category == _selectedCategory;
       final matchesMode = _selectedMode.contains(skill.type);
+      final owner = usersById[skill.ownerId];
       final matchesQuery =
           normalizedQuery.isEmpty ||
-          skill.title.toLowerCase().contains(normalizedQuery) ||
-          skill.description.toLowerCase().contains(normalizedQuery) ||
-          skill.category.toLowerCase().contains(normalizedQuery) ||
-          skill.level.toLowerCase().contains(normalizedQuery) ||
-          skill.exchangeFor.toLowerCase().contains(normalizedQuery) ||
-          skill.ownerName.toLowerCase().contains(normalizedQuery) ||
-          skill.university.toLowerCase().contains(normalizedQuery) ||
-          (usersById[skill.ownerId]?.department.toLowerCase().contains(
-                normalizedQuery,
-              ) ??
-              false);
+          _containsQuery(skill.title, normalizedQuery) ||
+          _containsQuery(skill.description, normalizedQuery) ||
+          _containsQuery(skill.category, normalizedQuery) ||
+          _containsQuery(skill.level, normalizedQuery) ||
+          _containsQuery(skill.exchangeFor, normalizedQuery) ||
+          _containsQuery(skill.ownerName, normalizedQuery) ||
+          _containsQuery(skill.university, normalizedQuery) ||
+          _containsQuery(owner?.department ?? '', normalizedQuery);
 
       return matchesCategory && matchesMode && matchesQuery;
     }).toList();
+  }
+
+  List<firestore_skill.Skill> _sortByBestMatch(
+    List<firestore_skill.Skill> skills,
+    AppUser? currentUser,
+    Map<String, AppUser> usersById,
+    List<firestore_skill.Skill> mySkills,
+  ) {
+    final sortedSkills = [...skills];
+    sortedSkills.sort((first, second) {
+      final firstMatch = _matchForSkill(
+        first,
+        usersById[first.ownerId],
+        currentUser,
+        mySkills,
+      );
+      final secondMatch = _matchForSkill(
+        second,
+        usersById[second.ownerId],
+        currentUser,
+        mySkills,
+      );
+
+      final scoreCompare = secondMatch.score.compareTo(firstMatch.score);
+      if (scoreCompare != 0) return scoreCompare;
+
+      return second.createdAt.compareTo(first.createdAt);
+    });
+
+    return sortedSkills;
   }
 
   Future<Map<String, AppUser>> _loadUsersForSkills(
@@ -191,9 +219,18 @@ class _DiscoverTabState extends State<DiscoverTab> {
                                 ),
                                 builder: (context, usersSnapshot) {
                                   final usersById = usersSnapshot.data ?? {};
-                                  final skills = _filteredSkills(
+                                  final currentAppUser =
+                                      usersById[currentUser.uid];
+                                  final mySkills = mySkillsSnapshot.data ?? [];
+                                  final filteredSkills = _filteredSkills(
                                     allSkills,
                                     usersById,
+                                  );
+                                  final skills = _sortByBestMatch(
+                                    filteredSkills,
+                                    currentAppUser,
+                                    usersById,
+                                    mySkills,
                                   );
 
                                   return Column(
@@ -203,6 +240,9 @@ class _DiscoverTabState extends State<DiscoverTab> {
                                       _DiscoverSummary(
                                         resultCount: skills.length,
                                         selectedCategory: _selectedCategory,
+                                        onSortPressed: () {
+                                          setState(() {});
+                                        },
                                       ),
                                       const SizedBox(height: 16),
                                       if (snapshot.connectionState ==
@@ -247,10 +287,9 @@ class _DiscoverTabState extends State<DiscoverTab> {
                                         _SkillResultsGrid(
                                           skills: skills,
                                           isWide: isWide,
-                                          currentUser:
-                                              usersById[currentUser.uid],
+                                          currentUser: currentAppUser,
                                           usersById: usersById,
-                                          mySkills: mySkillsSnapshot.data ?? [],
+                                          mySkills: mySkills,
                                         ),
                                     ],
                                   );
@@ -378,10 +417,12 @@ class _DiscoverSummary extends StatelessWidget {
   const _DiscoverSummary({
     required this.resultCount,
     required this.selectedCategory,
+    required this.onSortPressed,
   });
 
   final int resultCount;
   final String selectedCategory;
+  final VoidCallback onSortPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -407,7 +448,7 @@ class _DiscoverSummary extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
-          TextButton(onPressed: () {}, child: const Text('Sort')),
+          TextButton(onPressed: onSortPressed, child: const Text('Sort')),
         ],
       ),
     );
@@ -516,56 +557,150 @@ _MatchScore _matchForSkill(
   AppUser? currentUser,
   List<firestore_skill.Skill> mySkills,
 ) {
-  var score = 40;
+  var score = 0;
   final myWantedSkills = mySkills.where((skill) => skill.type == 'wanted');
   final myOfferedSkills = mySkills.where((skill) => skill.type == 'offered');
   final offeredSkillMatchesWanted = myWantedSkills.any((wantedSkill) {
-    return _textsMatch(skill.title, wantedSkill.title) ||
-        _textsMatch(skill.category, wantedSkill.category);
+    return _skillMatchesWantedSkill(skill, wantedSkill);
   });
   final exchangeMatchesMyOffer = myOfferedSkills.any((offeredSkill) {
-    return _textsMatch(skill.exchangeFor, offeredSkill.title) ||
-        _textsMatch(skill.exchangeFor, offeredSkill.category);
+    return _exchangeMatchesOfferedSkill(skill, offeredSkill);
   });
-  final sameUniversity =
-      currentUser != null &&
-      currentUser.university.isNotEmpty &&
-      currentUser.university.toLowerCase() ==
-          (owner?.university.isNotEmpty == true
-                  ? owner!.university
-                  : skill.university)
-              .toLowerCase();
-  final sameCampus =
-      currentUser != null &&
-      owner != null &&
-      currentUser.campus.isNotEmpty &&
-      currentUser.campus.toLowerCase() == owner.campus.toLowerCase();
+  final categoryMatchesWanted = myWantedSkills.any((wantedSkill) {
+    return _exactTextMatch(skill.category, wantedSkill.category);
+  });
 
-  if (offeredSkillMatchesWanted) score += 30;
+  if (offeredSkillMatchesWanted) score += 50;
   if (exchangeMatchesMyOffer) score += 30;
-  if (sameUniversity || sameCampus) score += 10;
+  if (categoryMatchesWanted) score += 10;
+  if (_sameUniversityOrCampus(skill, owner, currentUser)) score += 5;
   if ((owner?.rating ?? 0) >= 4.5) score += 5;
 
   final cappedScore = score > 100 ? 100 : score;
   return _MatchScore(score: cappedScore, label: _matchLabel(cappedScore));
 }
 
-bool _textsMatch(String first, String second) {
-  final normalizedFirst = first.trim().toLowerCase();
-  final normalizedSecond = second.trim().toLowerCase();
+bool _skillMatchesWantedSkill(
+  firestore_skill.Skill otherSkill,
+  firestore_skill.Skill wantedSkill,
+) {
+  if (_exactTextMatch(otherSkill.title, wantedSkill.title)) return true;
+  if (_exactTextMatch(otherSkill.category, wantedSkill.category)) return true;
+
+  return _meaningfulTextMatch(otherSkill.title, wantedSkill.title) ||
+      _meaningfulTextMatch(otherSkill.description, wantedSkill.title) ||
+      _meaningfulTextMatch(otherSkill.title, wantedSkill.category) ||
+      _meaningfulTextMatch(otherSkill.description, wantedSkill.category) ||
+      _meaningfulTextMatch(otherSkill.description, wantedSkill.description);
+}
+
+bool _exchangeMatchesOfferedSkill(
+  firestore_skill.Skill otherSkill,
+  firestore_skill.Skill offeredSkill,
+) {
+  return _exactTextMatch(otherSkill.exchangeFor, offeredSkill.title) ||
+      _exactTextMatch(otherSkill.exchangeFor, offeredSkill.category) ||
+      _meaningfulTextMatch(otherSkill.exchangeFor, offeredSkill.title) ||
+      _meaningfulTextMatch(otherSkill.exchangeFor, offeredSkill.category) ||
+      _meaningfulTextMatch(otherSkill.exchangeFor, offeredSkill.description);
+}
+
+bool _sameUniversityOrCampus(
+  firestore_skill.Skill skill,
+  AppUser? owner,
+  AppUser? currentUser,
+) {
+  if (currentUser == null) return false;
+
+  final ownerUniversity = owner?.university.trim().isNotEmpty == true
+      ? owner!.university
+      : skill.university;
+  final sameUniversity =
+      _normalizeText(currentUser.university).isNotEmpty &&
+      _normalizeText(currentUser.university) == _normalizeText(ownerUniversity);
+  final sameCampus =
+      owner != null &&
+      _normalizeText(currentUser.campus).isNotEmpty &&
+      _normalizeText(currentUser.campus) == _normalizeText(owner.campus);
+
+  return sameUniversity || sameCampus;
+}
+
+bool _exactTextMatch(String first, String second) {
+  final normalizedFirst = _normalizeText(first);
+  final normalizedSecond = _normalizeText(second);
   if (normalizedFirst.isEmpty || normalizedSecond.isEmpty) return false;
 
-  return normalizedFirst.contains(normalizedSecond) ||
-      normalizedSecond.contains(normalizedFirst);
+  return normalizedFirst == normalizedSecond;
+}
+
+bool _meaningfulTextMatch(String source, String target) {
+  final sourceText = _normalizeText(source);
+  final targetText = _normalizeText(target);
+  if (sourceText.isEmpty || targetText.isEmpty) return false;
+
+  if (_isMeaningfulPhrase(targetText) && sourceText.contains(targetText)) {
+    return true;
+  }
+  if (_isMeaningfulPhrase(sourceText) && targetText.contains(sourceText)) {
+    return true;
+  }
+
+  final sourceWords = _keywords(sourceText);
+  final targetWords = _keywords(targetText);
+
+  return targetWords.any(sourceWords.contains);
+}
+
+bool _containsQuery(String value, String normalizedQuery) {
+  return _normalizeText(value).contains(normalizedQuery);
+}
+
+String _normalizeText(String value) {
+  return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+}
+
+bool _isMeaningfulPhrase(String value) {
+  final words = _keywords(value);
+  return words.isNotEmpty && value.length >= 3;
+}
+
+List<String> _keywords(String value) {
+  return _normalizeText(value).split(RegExp(r'[^a-z0-9]+')).where((word) {
+    return word.length >= 3 && !_ignoredMatchWords.contains(word);
+  }).toList();
 }
 
 String _matchLabel(int score) {
-  if (score >= 90) return 'Great Match';
-  if (score >= 70) return 'Good Match';
-  if (score >= 50) return 'Possible Match';
+  if (score >= 85) return 'Great Match';
+  if (score >= 65) return 'Good Match';
+  if (score >= 40) return 'Possible Match';
+  if (score >= 1) return 'Low Match';
 
-  return 'Low Match';
+  return 'Not a Match';
 }
+
+const _ignoredMatchWords = {
+  'basic',
+  'basics',
+  'beginner',
+  'beginners',
+  'intermediate',
+  'advanced',
+  'skill',
+  'skills',
+  'lesson',
+  'lessons',
+  'class',
+  'classes',
+  'course',
+  'courses',
+  'teach',
+  'learn',
+  'learning',
+  'tutor',
+  'tutoring',
+};
 
 class _EmptySkillsState extends StatelessWidget {
   const _EmptySkillsState({required this.title, required this.message});

@@ -165,6 +165,10 @@ class _SkillFormPageState extends State<SkillFormPage> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final isEditing = _editingSkill != null;
+    final exchangeLabel = _type == 'offered' ? 'Exchange for' : 'I can offer';
+    final exchangeHint = _type == 'offered'
+        ? 'What skill do you want in return?'
+        : 'What can you teach in return?';
 
     return Scaffold(
       appBar: AppBar(title: Text(isEditing ? 'Edit Skill' : 'Add Skill')),
@@ -244,11 +248,12 @@ class _SkillFormPageState extends State<SkillFormPage> {
                       const SizedBox(height: 14),
                       TextFormField(
                         controller: _exchangeForController,
-                        decoration: const InputDecoration(
-                          labelText: 'Exchange for',
+                        decoration: InputDecoration(
+                          labelText: exchangeLabel,
+                          hintText: exchangeHint,
                         ),
                         validator: (value) =>
-                            validateRequired(value, 'Exchange for'),
+                            validateRequired(value, exchangeLabel),
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
