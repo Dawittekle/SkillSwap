@@ -268,6 +268,24 @@
 - `flutter test` passed.
 - `flutter build web` passed.
 
+## 2026-05-29 Discover Match Sorting And Skill Form Polish
+
+### Completed
+- Removed the generous base match score from Discover so unrelated skills no longer look like strong matches.
+- Updated Discover match scoring to prioritize real two-way skill compatibility:
+  - other student teaches what I want
+  - other student wants what I can offer
+  - same category, same university/campus, and high rating are small bonuses
+- Changed Discover default sorting to order visible results by best match first, then newest as a tie-breaker.
+- Wired the Discover Sort button to reapply best-match sorting to the filtered list.
+- Kept Discover search local and made it match skill fields, people fields, department, and exchangeFor.
+- Updated the Add/Edit Skill exchange field label and placeholder based on whether the skill is Offered or Wanted.
+
+### Verification
+- `flutter analyze` passed.
+- `flutter test` passed.
+- `flutter build web` passed.
+
 ## 2026-05-25 Discover And Skill Details
 
 ### Completed
