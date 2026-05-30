@@ -446,6 +446,16 @@ Do not commit real passwords, private keys, or secret credentials.
 
 ## Future Improvements
 
+Current limitations of the project include:
+
+* Real-time notifications are not yet implemented.
+* Profile image uploads are not currently supported.
+* Scheduling and availability management are simplified.
+* The recommendation system uses a basic compatibility score and could be enhanced with more advanced matching techniques.
+* Google and social authentication providers are not yet available.
+
+These limitations have been identified as potential areas for future development.
+
 Possible improvements:
 
 - Push notifications.
@@ -459,6 +469,48 @@ Possible improvements:
 - In-app notification center.
 - More detailed availability settings.
 - Better review analytics.
+
+
+## Contributing
+
+Contributions are welcome and help improve the SkillSwap platform.
+
+To contribute:
+
+1. Fork the repository.
+2. Create a new feature branch.
+3. Make your changes and test them locally.
+4. Commit your changes with a clear commit message.
+5. Push the branch to your fork.
+6. Open a Pull Request describing the changes made.
+
+Please follow the existing project structure and coding conventions when adding new features or fixing bugs.
+
+
+## Demo Data
+
+The project supports demo data seeding for presentations and testing.
+
+Sample users, skills, swap requests, and reviews can be generated through the demo data utilities located in:
+
+lib/demo/
+
+This allows evaluators to explore the application's functionality without manually creating large amounts of test data.
+
+
+## Testing
+
+Before submitting changes, run the following checks:
+
+```bash
+flutter analyze
+flutter test
+```
+
+These commands help identify code quality issues and verify that existing functionality continues to work correctly.
+
+Developers are encouraged to add unit tests and widget tests when introducing new features.
+
 
 ## Project Status
 
