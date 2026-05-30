@@ -148,8 +148,7 @@ lib/
 - `features/`: app screens grouped by feature.
 - `routing/`: route names, route arguments, and route generation.
 - `demo/`: demo seed data and mock fallback data.
-- `docs/`: presentation guides for the team.
-
+  
 ## Firestore Collections and Important Fields
 
 ### `users`
