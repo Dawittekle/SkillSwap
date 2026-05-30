@@ -467,6 +467,7 @@ Possible improvements:
 - Admin dashboard.
 - Report user and moderation system.
 - In-app notification center.
+- Scalability driven updates.
 - More detailed availability settings.
 - Better review analytics.
 
@@ -485,17 +486,6 @@ To contribute:
 6. Open a Pull Request describing the changes made.
 
 Please follow the existing project structure and coding conventions when adding new features or fixing bugs.
-
-
-## Demo Data
-
-The project supports demo data seeding for presentations and testing.
-
-Sample users, skills, swap requests, and reviews can be generated through the demo data utilities located in:
-
-lib/demo/
-
-This allows evaluators to explore the application's functionality without manually creating large amounts of test data.
 
 
 ## Testing
