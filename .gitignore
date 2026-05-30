@@ -21,7 +21,7 @@ ios/Pods/
 *.swo
 .DS_Store
 
-# Existing local pattern kept from the original repo.
+# Existing local files for development
 references/
 doc/
 docs/
