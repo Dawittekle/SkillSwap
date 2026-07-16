@@ -4,6 +4,9 @@ SkillSwap is a Flutter and Firebase final project for peer-to-peer student skill
 
 For example, one student can teach Physics and wants to learn Maths. Another student can teach Maths and wants to learn Physics. SkillSwap helps them discover each other, send a swap request, chat, complete the session, and leave a review.
 
+Delployed
+https://skillswap-7a183.web.app/
+
 ## Screenshots
 
 The screenshots below are stored in `assets/readme/`.
